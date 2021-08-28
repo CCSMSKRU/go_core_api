@@ -797,7 +797,7 @@ class Query {
     }
 }
 
-async function init(params = {}){
+function init(params = {}){
     const query_ = new Query({...params})
 
     const o2 = {
@@ -806,10 +806,11 @@ async function init(params = {}){
         params: {}
     }
 
-    const me = await query_.do(o2)
+    // const me = await query_.do(o2)
+    //
+    // console.log('Me', me)
 
-    console.log('Me', me)
-
+    // console.log('query_.do==>', typeof query_.do)
     return query_.do.bind(query_)
 }
 

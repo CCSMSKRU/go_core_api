@@ -29,7 +29,7 @@ const jsLoaders = () => {
 module.exports = {
     context: path.resolve(__dirname, 'src'),
     mode: 'development',
-    entry: ['@babel/polyfill', './example.js'],
+    entry: ['@babel/polyfill', './index.js'],
     output: {
         filename: filename('js'),
         path: path.resolve(__dirname, 'dist')
@@ -49,13 +49,13 @@ module.exports = {
     devtool: isDev ? 'source-map' : false,
     plugins: [
         new CleanWebpackPlugin(),
-        new HTMLWebpackPlugin({
-            template: 'index.html',
-            minify: {
-                removeComments: isProd,
-                collapseWhitespace: isProd
-            }
-        }),
+        // new HTMLWebpackPlugin({
+        //     template: 'index.html',
+        //     minify: {
+        //         removeComments: isProd,
+        //         collapseWhitespace: isProd
+        //     }
+        // }),
         // new CopyPlugin([
         //     {
         //         from: path.resolve(__dirname, 'src/favicon.ico'),

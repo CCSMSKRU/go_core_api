@@ -24,9 +24,9 @@ async function init() {
         params: {}
     }
 
-    // const me = await query(o2)
-    //
-    // console.log('Me', me)
+    const me = await query(o2)
+
+    console.log('Me', me)
 }
 
 init()
