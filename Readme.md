@@ -6,7 +6,7 @@ Works in various environments where there is javascript.
 ## Installation
 
 ```sh
-npm i ccs.go_core_query --save
+npm i go_core_query --save
 ```
 
 ## Usage
