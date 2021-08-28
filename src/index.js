@@ -250,7 +250,6 @@ class Query {
     }
 
     async query(obj = {}) {
-        console.log('query====', JSON.stringify(obj))
         return this.useAJAX
             ? await this.queryAJAX(obj)
             : await this.queryWS(obj)
@@ -343,6 +342,7 @@ class Query {
                 token: this.token
             },
         }
+        
         if (this.debug) console.log('connectSocket', options)
         this.socket = this.connectHost
             ? io(this.connectHost, options)
@@ -353,6 +353,10 @@ class Query {
         this.socket.on("connect", () => {
             if (this.debug) console.log('CONNECTED')
             this.ws_status = WS_CONNECTED
+            if (this.oldSocketId){
+                this.socket.emit('setOldSocketId', this.oldSocketId)
+            }
+            this.oldSocketId = this.socket.id
         })
 
         this.socket.on("disconnect", (reason) => {
@@ -437,12 +441,12 @@ class Query {
                         toastr['error'](t.additionalMessage, 'ВНИМАНИЕ!')
                     }
 
-                    if (result.code === -4) {
-                        console.log('НЕ АВТОРИЗОВАН')
-                        // item.callback(result)
-                        // this.socketQuery_stack.removeItem(callback_id)
-                        return false
-                    }
+                    // if (result.code === -4) {
+                    //     console.log('НЕ АВТОРИЗОВАН')
+                    //     item.callback(result)
+                    //     this.socketQuery_stack.removeItem(callback_id)
+                    //     return false
+                    // }
                 }
             } else {
                 console.log(`%c ОТВЕТ ДОЛЖЕН БЫТЬ ОБЪЕКТОМ И НЕ null. 
@@ -474,6 +478,7 @@ class Query {
 
                         result = uncollapseData(result)
                         if (dataIsObj && result.data) {
+                            debugger;
                             result.data = Object.entries(result.data)
                         }
                     }
@@ -684,6 +689,7 @@ class Query {
     }
 
     async queryWS(obj = {}) {
+        if (this.debug) console.log('queryWS== ws_status:', this.ws_status)
         if (this.ws_status !== WS_CONNECTED) {
             if (this.ws_status !== WS_CONNECTING) {
                 // Надо заинитьить сокет
@@ -784,7 +790,9 @@ class Query {
 
     async do(obj, cb) {
         if (typeof cb === 'function') {
-            return tryDo.call(this, obj, cb)
+            return tryDo.call(this, obj, (err, res) => {
+                cb(err || res)
+            })
         }
         return await new Promise((resolve, reject) => {
             // Здесь используем коллбек функцию, так как с помощью async/await делать рекурсивную асинхронную функцию
@@ -805,6 +813,13 @@ function init(params = {}){
         object: 'User',
         params: {}
     }
+
+
+    // query_.do(o2, (r)=>{
+    //     console.log('r', r)
+    //     debugger;
+    //     throw 'dasd'
+    // })
 
     // const me = await query_.do(o2)
     //

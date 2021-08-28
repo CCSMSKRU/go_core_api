@@ -11,6 +11,11 @@ const params = {
     debug:true,
     afterInitConnect:(socket)=>{
         console.log('afterInitConnect==>', socket)
+        // setTimeout(()=>{
+        //     socket.disconnect()
+        //     socket.connect()
+        // }, 5000)
+
     }
 }
 
@@ -23,6 +28,12 @@ async function init() {
         object: 'User',
         params: {}
     }
+
+    // query(o2, (r)=>{
+    //     console.log('r', r)
+    //     debugger;
+    //     throw 'dasd'
+    // })
 
     const me = await query(o2)
 
