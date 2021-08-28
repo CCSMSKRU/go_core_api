@@ -29,15 +29,15 @@ async function init() {
         params: {}
     }
 
-    // query(o2, (r)=>{
-    //     console.log('r', r)
-    //     debugger;
-    //     throw 'dasd'
-    // })
+    query(o2, (r)=>{
+        console.log('r', r)
+        // debugger;
+        // throw 'dasd'
+    })
 
-    const me = await query(o2)
-
-    console.log('Me', me)
+    // const me = await query(o2)
+    //
+    // console.log('Me', me)
 }
 
 init()

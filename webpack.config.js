@@ -27,10 +27,24 @@ const jsLoaders = () => {
     return loaders;
 }
 
+const plugins = ()=>{
+    const res = [new CleanWebpackPlugin()]
+    if (isDev) res.push(
+        new HTMLWebpackPlugin({
+            template: 'index.html',
+            minify: {
+                removeComments: isProd,
+                collapseWhitespace: isProd
+            }
+        })
+    )
+    return res
+}
+
 module.exports = {
     context: path.resolve(__dirname, 'src'),
     mode: 'development',
-    entry: ['@babel/polyfill', './example.js'],
+    entry: ['@babel/polyfill', isDev? './example.js' : './index.js'],
     output: {
         filename: filename('js'),
         path: path.resolve(__dirname, 'dist')
@@ -48,25 +62,7 @@ module.exports = {
         host:'127.0.0.1'
     },
     devtool: isDev ? 'source-map' : false,
-    plugins: [
-        new CleanWebpackPlugin(),
-        new HTMLWebpackPlugin({
-            template: 'index.html',
-            minify: {
-                removeComments: isProd,
-                collapseWhitespace: isProd
-            }
-        }),
-        // new CopyPlugin([
-        //     {
-        //         from: path.resolve(__dirname, 'src/favicon.ico'),
-        //         to: path.resolve(__dirname, 'dist')
-        //     }
-        // ]),
-        // new MiniCssExtractPlugin({
-        //     filename: filename('css')
-        // })
-    ],
+    plugins: plugins(),
     module: {
         rules: [
             {

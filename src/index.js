@@ -150,8 +150,6 @@ class Query {
                 ? params.path
                 : '/api'
 
-        if (!this.host) throw 'Param "host" has no passed and window is not defined.'
-
         this.connectHost = this.host
             ? `${this.https ? 'https' : 'http'}://${this.host}:${this.port}`
             : null
@@ -791,7 +789,12 @@ class Query {
     async do(obj, cb) {
         if (typeof cb === 'function') {
             return tryDo.call(this, obj, (err, res) => {
-                cb(err || res)
+                try {
+                    cb(err || res)
+                } catch (e) {
+                    console.error('Error in callback function after execution go_core_query', obj)
+                    console.error(e)
+                }
             })
         }
         return await new Promise((resolve, reject) => {
@@ -808,11 +811,11 @@ class Query {
 function init(params = {}){
     const query_ = new Query({...params})
 
-    const o2 = {
-        command: 'get_me',
-        object: 'User',
-        params: {}
-    }
+    // const o2 = {
+    //     command: 'get_me',
+    //     object: 'User',
+    //     params: {}
+    // }
 
 
     // query_.do(o2, (r)=>{
