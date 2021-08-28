@@ -38,7 +38,7 @@ module.exports = {
         extensions: ['.js'],
         alias: {
             '@': path.resolve(__dirname, 'src'),
-            '@core': path.resolve(__dirname, 'src/core'),
+            // '@core': path.resolve(__dirname, 'src/core'),
         }
     },
     devServer: {
@@ -56,15 +56,15 @@ module.exports = {
                 collapseWhitespace: isProd
             }
         }),
-        new CopyPlugin([
-            {
-                from: path.resolve(__dirname, 'src/favicon.ico'),
-                to: path.resolve(__dirname, 'dist')
-            }
-        ]),
-        new MiniCssExtractPlugin({
-            filename: filename('css')
-        })
+        // new CopyPlugin([
+        //     {
+        //         from: path.resolve(__dirname, 'src/favicon.ico'),
+        //         to: path.resolve(__dirname, 'dist')
+        //     }
+        // ]),
+        // new MiniCssExtractPlugin({
+        //     filename: filename('css')
+        // })
     ],
     module: {
         rules: [

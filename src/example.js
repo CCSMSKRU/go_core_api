@@ -1,4 +1,4 @@
-const initQuery = require('index')
+const initQuery = require('@/index')
 
 const params = {
     host: '192.168.1.45',
@@ -9,8 +9,8 @@ const params = {
     login:'ivantgco@gmail.com',
     password:'123',
     debug:true,
-    afterConnect:(socket)=>{
-        console.log('afterConnect==>', socket)
+    afterInitConnect:(socket)=>{
+        console.log('afterInitConnect==>', socket)
     }
 }
 
@@ -24,9 +24,9 @@ async function init() {
         params: {}
     }
 
-    const me = await query(o2)
-
-    console.log('Me', me)
+    // const me = await query(o2)
+    //
+    // console.log('Me', me)
 }
 
 init()

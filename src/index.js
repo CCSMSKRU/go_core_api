@@ -39,6 +39,13 @@ const uncollapseData = function (obj) {
 
 }
 
+const getCookie = (name) => {
+    return document.cookie.split('; ').reduce((r, v) => {
+        const parts = v.split('=')
+        return parts[0] === name ? decodeURIComponent(parts[1]) : r
+    }, '')
+}
+
 function tryDo(obj, cb) {
 
     // Если уже определена ошибка (либо во время авторизации либо во время выполнения запроса), то
@@ -145,7 +152,9 @@ class Query {
 
         if (!this.host) throw 'Param "host" has no passed and window is not defined.'
 
-        this.connectHost = `${this.https ? 'https' : 'http'}://${this.host}`
+        this.connectHost = this.host
+            ? `${this.https ? 'https' : 'http'}://${this.host}:${this.port}`
+            : null
         this.useAJAX = params.useAJAX
 
         this.socketQuery_stack = {
@@ -173,21 +182,10 @@ class Query {
         this.autoAuth = typeof params.autoAuth !== "undefined" ? params.autoAuth : false
         // Можно передать и тогда она будет вызываться если надо авторизоваться, при условии что autoAuth = false
         this.authFunction = params.authFunction || params.authFn
-        this.afterConnect = params.afterConnect
+        this.afterInitConnect = params.afterInitConnect
 
         this.login = params.login || 'api_test'
         this.password = params.password || 'api_test_password'
-
-        this.status = NO_AUTH
-        this.ws_status = WS_NOT_CONNECTED
-        this.auth_response = null
-        this.tryAuthCount = params.tryAuthCount || 10
-        this.tryAuthPause = params.tryAuthPause || 500
-
-        this.tryCount = params.tryCount || 10
-        this.tryPause = params.tryPause || 500
-
-        this.token = undefined
 
         this.storeGetFn = params.storeGetFn
         this.storeSetFn = params.storeSetFn
@@ -203,8 +201,9 @@ class Query {
                 if (typeof this.storeGetFn === 'function') return this.storeGetFn(key)
                 if (this.env === 'browser') {
                     if (this.browserStorage === 'cookie') {
-                        var re = new RegExp("(?:(?:^|.*;\s*)" + key + "\s*\=\s*([^;]*).*$)|^.*$")
-                        return document.cookie.replace(re, "$1")
+                        // var re = new RegExp("(?:(?:^|.*;\s*)" + key + "\s*\=\s*([^;]*).*$)|^.*$")
+                        // return document.cookie.replace(re, "$1")
+                        return getCookie(key)
                     } else if (this.browserStorage === 'localStorage') {
                         console.warn('Functionality in development (storage - get - localStorage)')
                     } else {
@@ -226,8 +225,21 @@ class Query {
             }
         }
 
+        this.token = this.storage.get(this.tokenStorageKey)
+
+        this.status = this.token ? READY : NO_AUTH
+        this.ws_status = WS_NOT_CONNECTED
+        this.auth_response = null
+        this.tryAuthCount = params.tryAuthCount || 10
+        this.tryAuthPause = params.tryAuthPause || 500
+
+        this.tryCount = params.tryCount || 10
+        this.tryPause = params.tryPause || 500
+
         this.debug = params.debug
         this.doNotDeleteCollapseDataParam = params.doNotDeleteCollapseDataParam
+
+        this.init()
 
     }
 
@@ -238,6 +250,7 @@ class Query {
     }
 
     async query(obj = {}) {
+        console.log('query====', JSON.stringify(obj))
         return this.useAJAX
             ? await this.queryAJAX(obj)
             : await this.queryWS(obj)
@@ -312,7 +325,7 @@ class Query {
         if (typeof cb === "function") {
             id = this.socketQuery_stack.addItem(cb, obj)
         }
-        this.socket.emit('socketQuery', obj, id, type)
+        this.socket.emit('socketQuery', obj, id)
     }
 
     connectSocket() {
@@ -322,7 +335,7 @@ class Query {
         this.ws_status = WS_CONNECTING
 
         const options = {
-            path: this.url.replace(/\/$/, '') + '/',
+            path: this.url.replace(/\/$/, ''),
             query: {
                 type: 'WEB',
             },
@@ -330,7 +343,10 @@ class Query {
                 token: this.token
             },
         }
-        this.socket = io(this.connectHost, options)
+        if (this.debug) console.log('connectSocket', options)
+        this.socket = this.connectHost
+            ? io(this.connectHost, options)
+            : io(options)
 
         // ========= SET WS Handlers =======================
 
@@ -339,24 +355,44 @@ class Query {
             this.ws_status = WS_CONNECTED
         })
 
-        this.socket.on("disconnect", () => {
-            if (this.debug) console.log('DISCONNECTED')
-            this.ws_status = WS_CONNECTING
+        this.socket.on("disconnect", (reason) => {
+            if (this.debug) console.log('SOCKET DISCONNECT', reason)
+            // this.ws_status = WS_NOT_CONNECTED
+            // if (reason === 'io client disconnect'){
+            //     // this.connectSocket()
+            //     this.ws_status = WS_CONNECTING
+            //     this.socket.connect()
+            // }
         })
 
         this.socket.on("connect_error", () => {
             if (this.debug) console.log('CONNECT_ERROR')
+
+
         });
 
-        this.socket.on("disconnect", (reason) => {
-            if (this.debug) console.log('CONNECT_ERROR', reason)
-            this.ws_status = WS_CONNECTING
-        });
+        // this.socket.on("disconnect", (reason) => {
+        //     if (this.debug) console.log('CONNECT_ERROR', reason)
+        //     this.ws_status = WS_NOT_CONNECTED
+        //     if (reason === 'io client disconnect'){
+        //         this.connectSocket()
+        //     }
+        // });
 
         // store token
         this.socket.on('token', (token)=> {
             this.token = token
+            this.socket.auth.token = this.token
             this.storage.set(this.tokenStorageKey, this.token)
+            // this.socket.disconnect()
+            // this.socket.connect()
+
+            if (!this.useAJAX){
+                this.ws_status = WS_CONNECTING
+                this.socket.disconnect()
+                if (this.status === IN_AUTH) this.status = READY
+                this.socket.connect()
+            }
         })
 
         // queryCallback
@@ -402,7 +438,10 @@ class Query {
                     }
 
                     if (result.code === -4) {
-                        return this.auth()
+                        console.log('НЕ АВТОРИЗОВАН')
+                        // item.callback(result)
+                        // this.socketQuery_stack.removeItem(callback_id)
+                        return false
                     }
                 }
             } else {
@@ -638,8 +677,9 @@ class Query {
             console.log('---SERVER--LOG--->', data)
         })
         this.ws_status = WS_CONNECTED
-        if (typeof this.afterConnect === 'function'){
-            this.afterConnect(this.socket)
+
+        if (typeof this.afterInitConnect === 'function'){
+            this.afterInitConnect(this.socket)
         }
     }
 
@@ -661,7 +701,6 @@ class Query {
 
         return await new Promise((resolve, reject) => {
             this.socketQuery(obj, res=>{
-                console.log('===socketQuery==cb===>', res)
                 resolve(res)
             })
         })
@@ -670,6 +709,7 @@ class Query {
     }
 
     async auth() {
+
         this.status = IN_AUTH
 
         if (!this.autoAuth){
@@ -712,6 +752,7 @@ class Query {
                     return
                 }
                 this.token = authRes.token
+
                 this.status = READY
                 return authRes
             } catch (e) {
@@ -741,7 +782,6 @@ class Query {
 
     }
 
-
     async do(obj, cb) {
         if (typeof cb === 'function') {
             return tryDo.call(this, obj, cb)
@@ -755,15 +795,24 @@ class Query {
             })
         })
     }
-
-
 }
 
-function init(params = {}){
-    const query_ = new Query(...params)
-    return query_.do
+async function init(params = {}){
+    const query_ = new Query({...params})
+
+    const o2 = {
+        command: 'get_me',
+        object: 'User',
+        params: {}
+    }
+
+    const me = await query_.do(o2)
+
+    console.log('Me', me)
+
+    return query_.do.bind(query_)
 }
 
 module.exports = init
 
-
+console.log('INDEX.JS')
