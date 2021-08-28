@@ -5,9 +5,9 @@ const params = {
     port: 9001,
     path:'',
     https: false,
-    autoAuth:true,
-    login:'ivantgco@gmail.com',
-    password:'123',
+    autoAuth:false,
+    // login:'ivantgco@gmail.com',
+    // password:'123',
     debug:true,
     afterInitConnect:(socket)=>{
         console.log('afterInitConnect==>', socket)
@@ -29,7 +29,20 @@ async function init() {
         params: {}
     }
 
-    query(o2, (r)=>{
+    const o3 = {
+        command: 'getNextPreview',
+        object: 'widget_user_session',
+        params: { filename:null },
+    }
+
+    // socketQuery(o, (res) => {
+    //     // console.log('getNextPreview', res)
+    //
+    //     if (res.filename)
+    //         this.onNewPreview(res.filename)
+    // })
+
+    query(o3, (r)=>{
         console.log('r', r)
         // debugger;
         // throw 'dasd'

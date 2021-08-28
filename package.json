@@ -1,8 +1,8 @@
 {
   "name": "go_core_query",
-  "version": "0.0.3",
+  "version": "0.0.6",
   "description": "The package allows you to connect to the GoCore core via socket or regular http (s) requests. Works in various environments where there is javascript.",
-  "main": "webpack.config.js",
+  "main": "dist/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "cross-env NODE_ENV=development webpack-dev-server --open",

@@ -8,7 +8,7 @@ const isProd = process.env.NODE_ENV === 'production'
 const isDev = !isProd
 
 // const filename = ext => isDev ? `bundle.${ext}` : `bundle.[hash].${ext}`
-const filename = ext => isDev ? `bundle.${ext}` : `[name].${ext}`
+const filename = ext => isDev ? `bundle.${ext}` : `index.${ext}`
 
 const jsLoaders = () => {
     const loaders = [

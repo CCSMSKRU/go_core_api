@@ -410,9 +410,11 @@ class Query {
 
             if (typeof result === 'object' && result !== null) {
                 if (typeof result.code === 'undefined') {
-                    console.log(`%c ${alias}Серверная функция должна возвращать "code". 
-                    Используйте стандартный ответ, например, cb(null, new UserOk('noToastr',{data:data});`,
-                        'background: #ffd582; color: #000')
+                    console.log(
+                        `%c ${alias}Серверная функция должна возвращать "code". 
+                        Используйте стандартный ответ, например, cb(null, new UserOk('noToastr',{data});`
+                        , 'background: #ffd582; color: #000'
+                    )
                 }
 
                 if (result.code !== 10) {
@@ -476,7 +478,6 @@ class Query {
 
                         result = uncollapseData(result)
                         if (dataIsObj && result.data) {
-                            debugger;
                             result.data = Object.entries(result.data)
                         }
                     }
