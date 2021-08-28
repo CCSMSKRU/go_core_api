@@ -1,7 +1,7 @@
 {
   "name": "ccs.go_core_query",
   "version": "0.0.1",
-  "description": "",
+  "description": "The package allows you to connect to the GoCore core via socket or regular http (s) requests. Works in various environments where there is javascript.",
   "main": "webpack.config.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -11,14 +11,21 @@
   "keywords": [
     "js",
     "jsvascript",
-    "webpack"
+    "GoCore",
+    "CCS",
+    "go_core_query",
+    "ccs.go_core_query"
   ],
   "author": "Complex Cloud Solutions LLC",
   "license": "ISC",
-  "bugs": {
-    "url": ""
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CCSMSKRU/go_core_api.git"
   },
-  "homepage": "",
+  "bugs": {
+    "url": "https://github.com/CCSMSKRU/go_core_api/issues"
+  },
+  "homepage": "https://go-core.ru/",
   "private": false,
   "browserslist": "> 0.25%, not dead",
   "devDependencies": {

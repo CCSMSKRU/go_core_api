@@ -814,6 +814,7 @@ function init(params = {}){
     return query_.do.bind(query_)
 }
 
+if (window){
+    window.initGoCoreQuery = init
+}
 module.exports = init
-
-console.log('INDEX.JS')
