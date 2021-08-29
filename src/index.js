@@ -66,8 +66,9 @@ function tryDo(obj, cb) {
 
     // Запускаем авторизацию и вызываем запрос заново (он попадет в цикл ожидание пока авторизация не пройдет)
     if (this.status === NO_AUTH) {
-        if (this.debug) console.log('Еще не авторизироавны. Запустим процесс и вызовем запрос снова')
+        if (this.debug) console.log('Еще не авторизироавны. Запустим процесс и вызовем запрос снова', obj)
         this.auth()
+        // if (!this.autoAuth) return
         return tryDo.call(this, obj, cb)
     }
 
@@ -75,6 +76,7 @@ function tryDo(obj, cb) {
     if (this.status === IN_AUTH) {
         if (this.debug) console.log('Еще производится авторизация, ждем')
         setTimeout(() => {
+            // if (!this.autoAuth) return
             tryDo.call(this, obj, cb)
         }, 100)
         return
@@ -229,7 +231,7 @@ class Query {
 
         this.token = this.storage.get(this.tokenStorageKey)
 
-        this.status = this.token ? READY : NO_AUTH
+        this.status = this.token || !this.autoAuth ? READY : NO_AUTH
         this.ws_status = WS_NOT_CONNECTED
         this.auth_response = null
         this.tryAuthCount = params.tryAuthCount || 10
@@ -261,7 +263,6 @@ class Query {
         const httpS = this.https ? require('https') : require('http')
         const data = JSON.stringify(obj)
 
-        if (this.debug) console.log('this.token', this.token)
         const options = {
             hostname: this.host,
             port: this.port,
@@ -393,12 +394,12 @@ class Query {
             // this.socket.disconnect()
             // this.socket.connect()
 
-            if (!this.useAJAX){
-                this.ws_status = WS_CONNECTING
-                this.socket.disconnect()
-                if (this.status === IN_AUTH) this.status = READY
-                this.socket.connect()
-            }
+            // if (!this.useAJAX){
+            //     this.ws_status = WS_CONNECTING
+            //     this.socket.disconnect()
+            //     if (this.status === IN_AUTH) this.status = READY
+            //     this.socket.connect()
+            // }
         })
 
         // queryCallback
