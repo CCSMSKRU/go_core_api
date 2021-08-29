@@ -54,7 +54,6 @@ const plugins = ()=>{
 module.exports = {
     context: path.resolve(__dirname, 'src'),
     mode: 'development',
-    // entry: [['@babel/polyfill', isDev? './example.js' : './index.js'], ['@babel/polyfill', './indexNative.js']],
     entry: ['@babel/polyfill', isDev? './example.js' : './index.js'],
     output: {
         filename: filename('js'),

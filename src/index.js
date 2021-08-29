@@ -813,7 +813,7 @@ class Query {
     }
 }
 
-export function init(params = {}){
+export default function init(params = {}){
     const query_ = new Query({...params})
 
     // const o2 = {
