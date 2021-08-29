@@ -7,8 +7,10 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const isProd = process.env.NODE_ENV === 'production'
 const isDev = !isProd
 
+const buildForES5 = process.env.ES5 === 'true'
+
 // const filename = ext => isDev ? `bundle.${ext}` : `bundle.[hash].${ext}`
-const filename = ext => isDev ? `bundle.${ext}` : `index.${ext}`
+const filename = ext => isDev ? `bundle.${ext}` : (buildForES5 ? `indexES5.${ext}` : `index.${ext}`)
 
 const jsLoaders = () => {
     const loaders = [
@@ -33,7 +35,8 @@ const jsLoaders = () => {
 }
 
 const plugins = ()=>{
-    const res = [new CleanWebpackPlugin()]
+    // const res = [new CleanWebpackPlugin()]
+    const res = []
     if (isDev) {
         res.push(
             new HTMLWebpackPlugin({
@@ -51,14 +54,15 @@ const plugins = ()=>{
 module.exports = {
     context: path.resolve(__dirname, 'src'),
     mode: 'development',
+    // entry: [['@babel/polyfill', isDev? './example.js' : './index.js'], ['@babel/polyfill', './indexNative.js']],
     entry: ['@babel/polyfill', isDev? './example.js' : './index.js'],
     output: {
         filename: filename('js'),
         path: path.resolve(__dirname, 'dist'),
-        library: 'initGoCoreQuery',
-        libraryTarget: 'commonjs2',
+        library: buildForES5 ? undefined :'initGoCoreQuery',
+        libraryTarget: buildForES5 ? undefined :'commonjs2',
         // filename: 'myLib.js',
-        globalObject: 'this',
+        globalObject: buildForES5 ? undefined :'this',
     },
     resolve: {
         extensions: ['.js'],
