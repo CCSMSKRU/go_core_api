@@ -15,7 +15,12 @@ const jsLoaders = () => {
         {
             loader: 'babel-loader',
             options: {
-                presets: ['@babel/preset-env'],
+                presets: [['@babel/preset-env', {
+                    targets: {
+                        node: "current"
+                    },
+                    modules: false
+                }]],
                 plugins: ['@babel/plugin-proposal-class-properties']
             }
         }
@@ -29,15 +34,17 @@ const jsLoaders = () => {
 
 const plugins = ()=>{
     const res = [new CleanWebpackPlugin()]
-    if (isDev) res.push(
-        new HTMLWebpackPlugin({
-            template: 'index.html',
-            minify: {
-                removeComments: isProd,
-                collapseWhitespace: isProd
-            }
-        })
-    )
+    if (isDev) {
+        res.push(
+            new HTMLWebpackPlugin({
+                template: 'index.html',
+                minify: {
+                    removeComments: isProd,
+                    collapseWhitespace: isProd
+                }
+            })
+        )
+    }
     return res
 }
 
@@ -47,7 +54,11 @@ module.exports = {
     entry: ['@babel/polyfill', isDev? './example.js' : './index.js'],
     output: {
         filename: filename('js'),
-        path: path.resolve(__dirname, 'dist')
+        path: path.resolve(__dirname, 'dist'),
+        library: 'initGoCoreQuery',
+        libraryTarget: 'commonjs2',
+        // filename: 'myLib.js',
+        globalObject: 'this',
     },
     resolve: {
         extensions: ['.js'],

@@ -1,6 +1,10 @@
-const moment = require('moment')
-const io = require('socket.io-client')
-const {v4} = require("uuid")
+// const moment = require('moment')
+// const io = require('socket.io-client')
+// const {v4} = require("uuid")
+
+import moment from 'moment'
+import io from 'socket.io-client'
+import {v4} from 'uuid'
 
 
 const WS_NOT_CONNECTED = 'WS_NOT_CONNECTED'
@@ -809,7 +813,7 @@ class Query {
     }
 }
 
-function init(params = {}){
+export default function init(params = {}){
     const query_ = new Query({...params})
 
     // const o2 = {
@@ -836,4 +840,4 @@ function init(params = {}){
 if (window){
     window.initGoCoreQuery = init
 }
-module.exports = init
+// module.exports = init
