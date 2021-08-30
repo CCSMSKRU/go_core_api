@@ -68,7 +68,7 @@ function tryDo(obj, cb) {
     if (this.status === NO_AUTH) {
         if (this.debug) console.log('Еще не авторизироавны. Запустим процесс и вызовем запрос снова', obj)
         this.auth()
-        // if (!this.autoAuth) return
+        if (!this.autoAuth) return
         return tryDo.call(this, obj, cb)
     }
 
@@ -76,7 +76,7 @@ function tryDo(obj, cb) {
     if (this.status === IN_AUTH) {
         if (this.debug) console.log('Еще производится авторизация, ждем')
         setTimeout(() => {
-            // if (!this.autoAuth) return
+            if (!this.autoAuth) return
             tryDo.call(this, obj, cb)
         }, 100)
         return
