@@ -95,6 +95,7 @@ function tryDo(obj, cb) {
                 if (res.code) {
                     // Сессия стухла
                     if (res.code === -4) {
+                        if (!this.autoAuth) return cb(res)
                         this.status = NO_AUTH
                         return tryDo.call(this, obj, cb)
                     }
