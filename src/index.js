@@ -91,7 +91,6 @@ function tryDo(obj, cb) {
         const q = async () => {
             try {
                 res = await this.query(obj)
-                if (this.debug) console.log('res==>', res)
                 if (res.code) {
                     // Сессия стухла
                     if (res.code === -4) {
