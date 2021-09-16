@@ -388,7 +388,7 @@ class Query {
 
         // store token
         this.socket.on('token', (token)=> {
-            if (this.debug) console.log('onToken', token)
+            // if (this.debug) console.log('onToken', token)
             this.token = token
             this.socket.auth.token = this.token
             this.storage.set(this.tokenStorageKey, this.token)
