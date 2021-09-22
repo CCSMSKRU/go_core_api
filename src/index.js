@@ -55,18 +55,18 @@ function tryDo(obj, cb) {
     // Если уже определена ошибка (либо во время авторизации либо во время выполнения запроса), то
     // Отклоняем все запросы. Позже эта ошибка будет сброшена
     if (this.status === ERROR) {
-        if (this.debug) console.log('Ошибка сервера. Завершим', this.response)
+        if (this.debugFull) console.log('Ошибка сервера. Завершим', this.response)
         return cb(null, this.auth_response)
     }
 
     if (this.status === AUTH_ERROR) {
-        if (this.debug) console.log('Ошибка авторизации. Завершим', this.auth_response)
+        if (this.debugFull) console.log('Ошибка авторизации. Завершим', this.auth_response)
         return cb(null, this.auth_response)
     }
 
     // Запускаем авторизацию и вызываем запрос заново (он попадет в цикл ожидание пока авторизация не пройдет)
     if (this.status === NO_AUTH) {
-        if (this.debug) console.log('Еще не авторизироавны. Запустим процесс и вызовем запрос снова', obj)
+        if (this.debugFull) console.log('Еще не авторизироавны. Запустим процесс и вызовем запрос снова', obj)
         this.auth()
         if (!this.autoAuth) return
         return tryDo.call(this, obj, cb)
@@ -74,7 +74,7 @@ function tryDo(obj, cb) {
 
     // Производится авторизация, немного ждем и вызываем заново. Таким образом рано или поздно статус изменется
     if (this.status === IN_AUTH) {
-        if (this.debug) console.log('Еще производится авторизация, ждем')
+        if (this.debugFull) console.log('Еще производится авторизация, ждем')
         setTimeout(() => {
             if (!this.autoAuth) return
             tryDo.call(this, obj, cb)
@@ -84,7 +84,7 @@ function tryDo(obj, cb) {
 
 
     if (this.status === READY) {
-        if (this.debug) console.log('Выполним запрос')
+        if (this.debugFull) console.log('Выполним запрос')
         let res
         let counter = 0
 
@@ -241,6 +241,7 @@ class Query {
         this.tryPause = params.tryPause || 500
 
         this.debug = params.debug
+        this.debugFull = params.debugFull
         this.doNotDeleteCollapseDataParam = params.doNotDeleteCollapseDataParam
 
         this.init()
@@ -346,7 +347,7 @@ class Query {
             },
         }
         
-        if (this.debug) console.log('connectSocket', options)
+        if (this.debugFull) console.log('connectSocket', options)
         this.socket = this.connectHost
             ? io(this.connectHost, options)
             : io(options)
@@ -372,8 +373,8 @@ class Query {
             // }
         })
 
-        this.socket.on("connect_error", () => {
-            if (this.debug) console.log('CONNECT_ERROR')
+        this.socket.on("connect_error", (err) => {
+            if (this.debug) console.log('CONNECT_ERROR', err)
 
 
         });
@@ -694,14 +695,14 @@ class Query {
     }
 
     async queryWS(obj = {}) {
-        if (this.debug) console.log('queryWS== ws_status:', this.ws_status)
+        if (this.debugFull) console.log('queryWS== ws_status:', this.ws_status)
         if (this.ws_status !== WS_CONNECTED) {
             if (this.ws_status !== WS_CONNECTING) {
                 // Надо заинитьить сокет
                 this.connectSocket()
             }
 
-            if (this.debug) console.log('Socket not ready now', this.ws_status)
+            if (this.debugFull) console.log('Socket not ready now', this.ws_status)
 
             return await new Promise((resolve) => {
                 setTimeout(async () => {
