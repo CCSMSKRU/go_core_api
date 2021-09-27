@@ -1,4 +1,5 @@
-const initQuery = require('@/index')
+// const initQuery = require('@/index')
+import initQuery from '@/index'
 
 const params = {
     host: '192.168.1.45',

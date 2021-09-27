@@ -58,10 +58,10 @@ module.exports = {
     output: {
         filename: filename('js'),
         path: path.resolve(__dirname, 'dist'),
-        library: buildForES5 ? undefined :'initGoCoreQuery',
-        libraryTarget: buildForES5 ? undefined :'commonjs2',
+        library: isDev ? undefined : (buildForES5 ? undefined :'initGoCoreQuery'),
+        libraryTarget: isDev ? undefined : (buildForES5 ? undefined :'commonjs2'),
         // filename: 'myLib.js',
-        globalObject: buildForES5 ? undefined :'this',
+        globalObject: isDev ? undefined : (buildForES5 ? undefined :'this'),
     },
     resolve: {
         extensions: ['.js'],
