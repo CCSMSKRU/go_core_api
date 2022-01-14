@@ -275,39 +275,48 @@ class Query {
                 'Authorization': `Bearer ${this.token}`
             }
         }
-        // if (this.cookie){
-        //     options.headers['Set-Cookie'] = this.cookie
-        // }
 
-        return await new Promise((resolve, reject) => {
+        if (window) {
 
-            const req = httpS.request(options, res => {
+            let jesJSON, res
 
-                res.setEncoding('utf8')
-                let rawData = ''
-                res.on('data', (chunk) => {
-                    rawData += chunk
+            try {
+                res = await fetch(this.url, options)
+                jesJSON = await res.json()
+            } catch (e) {
+                jesJSON = {code:-5000, message: e.message, data:{e, text:res ? await res.text() : undefined}}
+            }
+            return jesJSON
+        } else {
+            return await new Promise((resolve, reject) => {
+
+                const req = httpS.request(options, res => {
+
+                    res.setEncoding('utf8')
+                    let rawData = ''
+                    res.on('data', (chunk) => {
+                        rawData += chunk
+                    })
+                    res.on('end', () => {
+                        try {
+                            const parsedData = JSON.parse(rawData)
+                            resolve(parsedData)
+                        } catch (e) {
+                            console.error(e.message)
+                            reject(e)
+                        }
+                    })
                 })
-                res.on('end', () => {
-                    try {
-                        const parsedData = JSON.parse(rawData)
-                        resolve(parsedData)
-                    } catch (e) {
-                        console.error(e.message)
-                        reject(e)
-                    }
+
+                req.on('error', error => {
+                    console.error(error)
+                    reject(error)
                 })
+
+                req.write(data)
+                req.end()
             })
-
-            req.on('error', error => {
-                console.error(error)
-                reject(error)
-            })
-
-            req.write(data)
-            req.end()
-        })
-
+        }
 
     }
 
