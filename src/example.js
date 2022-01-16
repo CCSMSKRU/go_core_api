@@ -2,11 +2,14 @@
 import initQuery from '@/index'
 
 const params = {
-    host: '192.168.1.78',
+    host: '127.0.0.1',
     port: 9001,
     path:'',
     https: false,
     autoAuth:false,
+    authFunction:()=>{
+        alert('Auth')
+    },
     // login:'ivantgco@gmail.com',
     // password:'123',
     debug:true,
@@ -43,7 +46,7 @@ async function init() {
     //         this.onNewPreview(res.filename)
     // })
 
-    query(o3, (r)=>{
+    query(o2, (r)=>{
         console.log('r', r)
         // debugger;
         // throw 'dasd'
