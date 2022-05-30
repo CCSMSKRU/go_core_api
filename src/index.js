@@ -18,6 +18,16 @@ const AUTH_ERROR = 'AUTH_ERROR'
 const ERROR = 'ERROR'
 
 const uncollapseData = function (obj) {
+    if (obj?.data?.rowsCollapsed){
+        obj.data.rows = obj.data.rowsCollapsed.rows.map(rowArr => {
+            const rowObj = {}
+            rowArr.forEach((val, i)=>{
+                rowObj[obj.data.rowsCollapsed.columns[i]] = val
+            })
+            return rowObj
+        })
+        return obj
+    }
     if (!Array.isArray(obj.data) || !obj.data_columns) return obj
     var data = obj.data
     var res = obj
@@ -480,12 +490,34 @@ class Query {
 
                 if (result !== null && typeof result == 'object') {
 
-                    if (typeof result.data == 'object' && typeof result.data_columns == 'object') {
+                    if (typeof result.data == 'object'
+                        && (typeof result.data_columns == 'object' || result.data.rowsCollapsed)
+                    ) {
 
                         result = uncollapseData(result)
                         if (dataIsObj && result.data) {
                             result.data = Object.entries(result.data)
                         }
+
+
+                    }
+                    // Приведем к старому формату
+                    if (item.request.isNotApi202205 && Array.isArray(result.data.rows)){
+
+                        result.data_columns = result.data.additionalData.data_columns
+                        result.extra_data = result.data.additionalData
+                        result.data = result.data.rows
+
+                        // const newData = [...result.data.rows]
+                        // // const skip = ['rows', 'rowsCollapsed']
+                        // Object.keys(result.data).forEach(key=>{
+                        //     // if (skip.includes(key)) return
+                        //     if (!isNaN(+key)) return
+                        //     newData[key] = result.data[key]
+                        // })
+                        // newData.extra_data = result.data.additionalData
+                        // result.data = newData
+                        // console.log('isNotApi202205=====', result)
                     }
 
                 } else {
@@ -794,6 +826,7 @@ class Query {
     }
 
     async do(obj, cb) {
+        // if (obj?.isNotApi202205) alert('asas')
         if (typeof cb === 'function') {
             return tryDo.call(this, obj, (err, res) => {
                 try {
