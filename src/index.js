@@ -18,10 +18,10 @@ const AUTH_ERROR = 'AUTH_ERROR'
 const ERROR = 'ERROR'
 
 const uncollapseData = function (obj) {
-    if (obj?.data?.rowsCollapsed){
+    if (obj?.data?.rowsCollapsed) {
         obj.data.rows = obj.data.rowsCollapsed.rows.map(rowArr => {
             const rowObj = {}
-            rowArr.forEach((val, i)=>{
+            rowArr.forEach((val, i) => {
                 rowObj[obj.data.rowsCollapsed.columns[i]] = val
             })
             return rowObj
@@ -258,8 +258,8 @@ class Query {
 
     }
 
-    init(){
-        if (!this.useAJAX){
+    init() {
+        if (!this.useAJAX) {
             this.connectSocket()
         }
     }
@@ -341,7 +341,7 @@ class Query {
     }
 
     connectSocket() {
-        if (this.ws_status !== WS_NOT_CONNECTED){
+        if (this.ws_status !== WS_NOT_CONNECTED) {
             return
         }
         this.ws_status = WS_CONNECTING
@@ -355,7 +355,7 @@ class Query {
                 token: this.token
             },
         }
-        
+
         if (this.debugFull) console.log('connectSocket', options)
         this.socket = this.connectHost
             ? io(this.connectHost, options)
@@ -366,7 +366,7 @@ class Query {
         this.socket.on("connect", () => {
             if (this.debug) console.log('CONNECTED')
             this.ws_status = WS_CONNECTED
-            if (this.oldSocketId){
+            if (this.oldSocketId) {
                 this.socket.emit('setOldSocketId', this.oldSocketId)
             }
             this.oldSocketId = this.socket.id
@@ -386,7 +386,7 @@ class Query {
             if (this.debug) console.log('CONNECT_ERROR', err)
 
 
-        });
+        })
 
         // this.socket.on("disconnect", (reason) => {
         //     if (this.debug) console.log('CONNECT_ERROR', reason)
@@ -397,7 +397,7 @@ class Query {
         // });
 
         // store token
-        this.socket.on('token', (token)=> {
+        this.socket.on('token', (token) => {
             // if (this.debug) console.log('onToken', token)
             this.token = token
             this.socket.auth.token = this.token
@@ -415,7 +415,7 @@ class Query {
 
         // queryCallback
 
-        this.socket.on('socketQueryCallback', (callback_id, result, request_time)=> {
+        this.socket.on('socketQueryCallback', (callback_id, result, request_time) => {
             const item = this.socketQuery_stack.getItem(callback_id)
             if (typeof item !== "object") return
             var alias = '➢ ' + item.request.object + ' ➢ ' + item.request.command + '    '
@@ -501,23 +501,22 @@ class Query {
 
 
                     }
-                    // Приведем к старому формату
-                    if (item.request.isNotApi202205 && Array.isArray(result.data.rows)){
+                    // Приведем к старому формату rows
+                    if (item.request.isNotApi202205 && Array.isArray(result.data.rows)) {
 
                         result.data_columns = result.data.additionalData.data_columns
                         result.extra_data = result.data.additionalData
                         result.data = result.data.rows
 
-                        // const newData = [...result.data.rows]
-                        // // const skip = ['rows', 'rowsCollapsed']
-                        // Object.keys(result.data).forEach(key=>{
-                        //     // if (skip.includes(key)) return
-                        //     if (!isNaN(+key)) return
-                        //     newData[key] = result.data[key]
-                        // })
-                        // newData.extra_data = result.data.additionalData
-                        // result.data = newData
-                        // console.log('isNotApi202205=====', result)
+                    }
+
+                    // Приведем к старому формату данные возвращенные черег объект
+                    if (item.request.isNotApi202205
+                        && result.data && typeof result.data === 'object' && !Array.isArray(result.data)) {
+
+                        Object.keys(result.data).forEach(key => {
+                            result[key] = result.data[key]
+                        })
                     }
 
                 } else {
@@ -559,7 +558,7 @@ class Query {
                     switch (result.confirmType) {
 
                         case 'dialog' :
-                            if (!bootbox || typeof bootbox.dialog !== 'function'){
+                            if (!bootbox || typeof bootbox.dialog !== 'function') {
                                 console.warn('bootbox.dialog is not installed (is not a function)')
                                 break
                             }
@@ -579,7 +578,7 @@ class Query {
                                 buttons: {
                                     success: {
                                         label: okBtnText,
-                                        callback: ()=> {
+                                        callback: () => {
 
                                             if (result.responseType === 'text') {
 
@@ -599,7 +598,7 @@ class Query {
                                                                 resObj[$(this).attr('id')] = $(this).val('checked')
                                                                 break
                                                         }
-                                                })
+                                                    })
                                                 item.request.params.confirm = resObj
                                             } else {
                                                 item.request.params.confirm = true
@@ -613,7 +612,7 @@ class Query {
                                         callback: function () {
 
 
-                                            if (toastr && typeof toastr['info'] === 'function'){
+                                            if (toastr && typeof toastr['info'] === 'function') {
                                                 toastr['info'](cancelMsg)
                                             }
                                             item.callback(result)
@@ -630,7 +629,7 @@ class Query {
                             break
 
                         default :
-                            if (!toastr || typeof toastr[result.toastr.type] !== 'function'){
+                            if (!toastr || typeof toastr[result.toastr.type] !== 'function') {
                                 console.warn(`toastr not available or unknown type of toastr: ${result.toastr.type}`)
                                 break
                             }
@@ -660,7 +659,7 @@ class Query {
                             })
 
                             const confirmBtn = document.getElementById('confirm_socket_query_' + btnGuid)
-                            confirmBtn.addEventListener('click', e=>{
+                            confirmBtn.addEventListener('click', e => {
                                 item.request.params.confirm = true
                                 window.setTimeout(function () {
                                     toastr.clear()
@@ -669,7 +668,7 @@ class Query {
                             })
 
                             const cancelBtn = document.getElementById('cancel_socket_query_' + btnGuid)
-                            cancelBtn.addEventListener('click', e=>{
+                            cancelBtn.addEventListener('click', e => {
                                 toastr['info'](cancelMsg)
                                 window.setTimeout(function () {
                                     toastr.clear()
@@ -708,19 +707,19 @@ class Query {
         })
 
         this.socket.on('socketQueryCallbackError', function (err) {
-            console.log('socketQueryCallbackError==>',err);
-        });
+            console.log('socketQueryCallbackError==>', err)
+        })
 
-        this.socket.on('logout', ()=> {
+        this.socket.on('logout', () => {
             this.auth()
-        });
+        })
 
         this.socket.on('log', function (data) {
             console.log('---SERVER--LOG--->', data)
         })
         this.ws_status = WS_CONNECTED
 
-        if (typeof this.afterInitConnect === 'function'){
+        if (typeof this.afterInitConnect === 'function') {
             this.afterInitConnect(this.socket)
         }
     }
@@ -743,7 +742,7 @@ class Query {
         }
 
         return await new Promise((resolve, reject) => {
-            this.socketQuery(obj, res=>{
+            this.socketQuery(obj, res => {
                 resolve(res)
             })
         })
@@ -755,7 +754,7 @@ class Query {
 
         this.status = IN_AUTH
 
-        if (!this.autoAuth){
+        if (!this.autoAuth) {
             if (typeof this.authFunction === 'function') {
                 this.authFunction({}, err => {
                     if (err) {
@@ -848,7 +847,7 @@ class Query {
     }
 }
 
-export default function init(params = {}){
+export default function init(params = {}) {
     const query_ = new Query({...params})
 
     // const o2 = {
@@ -872,7 +871,7 @@ export default function init(params = {}){
     return query_.do.bind(query_)
 }
 
-if (window){
+if (window) {
     window.initGoCoreQuery = init
 }
 // module.exports = init
