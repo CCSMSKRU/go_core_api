@@ -196,6 +196,7 @@ class Query {
         this.autoAuth = typeof params.autoAuth !== "undefined" ? params.autoAuth : false
         // Можно передать и тогда она будет вызываться если надо авторизоваться, при условии что autoAuth = false
         this.authFunction = params.authFunction || params.authFn
+        this.toMainFunction = params.toMainFunction || params.toMainFn
         this.afterInitConnect = params.afterInitConnect
 
         this.login = params.login || 'api_test'
@@ -714,6 +715,10 @@ class Query {
             this.auth()
         })
 
+        this.socket.on('toMain', (...args) => {
+            this.toMainFunction(...args)
+        })
+
         this.socket.on('log', function (data) {
             console.log('---SERVER--LOG--->', data)
         })
@@ -821,6 +826,14 @@ class Query {
         }
 
         await tryQ()
+
+    }
+
+    async toMain(...args) {
+
+        if (typeof this.toMainFunction === 'function') {
+            this.toMainFunction(...args)
+        }
 
     }
 
