@@ -171,6 +171,9 @@ class Query {
             : null
         this.useAJAX = params.useAJAX
 
+        this.device_type = params.device_type || 'BROWSER'
+        this.device_info = params.device_info
+
         this.socketQuery_stack = {
             items: {},
             getItem: function (id) {
@@ -350,7 +353,9 @@ class Query {
         const options = {
             path: this.url.replace(/\/$/, ''),
             query: {
-                type: 'WEB',
+                type: 'WEB', // deprecated
+                device_type:this.device_type,
+                device_info:this.device_info
             },
             auth: {
                 token: this.token
