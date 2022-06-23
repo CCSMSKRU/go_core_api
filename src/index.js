@@ -721,7 +721,7 @@ class Query {
         })
 
         this.socket.on('toMain', (...args) => {
-            this.toMainFunction(...args)
+            if (typeof this.toMainFunction === "function") this.toMainFunction(...args)
         })
 
         this.socket.on('log', function (data) {
