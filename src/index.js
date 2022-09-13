@@ -519,9 +519,9 @@ class Query {
                     // Приведем к старому формату данные возвращенные черег объект
                     if (item.request.isNotApi202205
                         && result.data && typeof result.data === 'object' && !Array.isArray(result.data)) {
-
-                        Object.keys(result.data).forEach(key => {
-                            result[key] = result.data[key]
+                        const resData = {...result.data}
+                        Object.keys(resData).forEach(key => {
+                            result[key] = resData[key]
                         })
                     }
 
