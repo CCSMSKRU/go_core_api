@@ -1,7 +1,3 @@
-// const moment = require('moment')
-// const io = require('socket.io-client')
-// const {v4} = require("uuid")
-
 import moment from 'moment'
 import io from 'socket.io-client'
 import {v4} from 'uuid'
@@ -667,7 +663,7 @@ class Query {
                             const confirmBtn = document.getElementById('confirm_socket_query_' + btnGuid)
                             confirmBtn.addEventListener('click', e => {
                                 item.request.params.confirm = true
-                                window.setTimeout(function () {
+                                window?.setTimeout(function () {
                                     toastr.clear()
                                 }, 1000)
                                 this.do(item.request, item.callback)
@@ -676,7 +672,7 @@ class Query {
                             const cancelBtn = document.getElementById('cancel_socket_query_' + btnGuid)
                             cancelBtn.addEventListener('click', e => {
                                 toastr['info'](cancelMsg)
-                                window.setTimeout(function () {
+                                window?.setTimeout(function () {
                                     toastr.clear()
                                 }, 1000)
                                 item.callback(result)
@@ -691,20 +687,25 @@ class Query {
                 }
 
                 if (result.system_download_now) {
-                    const linkName = 'my_download_link' + v4()
+                    if (!document) {
+                        console.warn(`document not available`)
+                    } else {
+                        const linkName = 'my_download_link' + v4()
 
-                    const nameRu = result.name_ru || result.filename
+                        const nameRu = result.name_ru || result.filename
 
-                    const body_ = document.getElementsByTagName('body')[0]
+                        const body_ = document.getElementsByTagName('body')[0]
 
-                    const a = document.createElement('a')
-                    a.setAttribute('id', linkName)
-                    a.setAttribute('href', result.path + result.filename)
-                    a.setAttribute('download', nameRu)
-                    a.setAttribute('style', "display:none;")
-                    body_.appendChild(a)
-                    a.click()
-                    a.remove()
+                        const a = document.createElement('a')
+                        a.setAttribute('id', linkName)
+                        a.setAttribute('href', result.path + result.filename)
+                        a.setAttribute('download', nameRu)
+                        a.setAttribute('style', "display:none;")
+                        body_.appendChild(a)
+                        a.click()
+                        a.remove()
+                    }
+
                 }
 
                 item.callback(result)
@@ -889,7 +890,7 @@ export default function init(params = {}) {
     return query_.do.bind(query_)
 }
 
-if (window) {
+if (typeof window === "object" && window) {
     window.initGoCoreQuery = init
 }
 // module.exports = init
