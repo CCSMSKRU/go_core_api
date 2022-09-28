@@ -63,8 +63,8 @@ module.exports = {
         // filename: 'myLib.js',
         globalObject: isDev ? undefined : (buildForES5 ? undefined : 'this'),
     },
-    target: isDev ? undefined : "node",
-    externals: isDev ? undefined : {
+    target: isDev || buildForES5 ? undefined : "node",
+    externals: isDev || buildForES5 ? undefined : {
         bufferutil: "bufferutil",
         "utf-8-validate": "utf-8-validate",
     },
