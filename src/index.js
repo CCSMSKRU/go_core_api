@@ -1,4 +1,3 @@
-import moment from 'moment'
 import io from 'socket.io-client'
 import {v4} from 'uuid'
 
@@ -180,7 +179,7 @@ class Query {
                 this.items[id] = {
                     callback: cb,
                     request: obj,
-                    time: moment().valueOf()
+                    time: Date.now()
                 }
 
                 return id
@@ -350,8 +349,8 @@ class Query {
             path: this.url.replace(/\/$/, ''),
             query: {
                 type: 'WEB', // deprecated
-                device_type:this.device_type,
-                device_info:this.device_info
+                device_type: this.device_type,
+                device_info: this.device_info
             },
             auth: {
                 token: this.token
