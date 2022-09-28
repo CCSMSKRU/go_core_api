@@ -1,5 +1,5 @@
 import io from 'socket.io-client'
-import {v4} from 'uuid'
+
 
 
 const WS_NOT_CONNECTED = 'WS_NOT_CONNECTED'
@@ -159,12 +159,27 @@ class Query {
             ? params.url
             : typeof params.path !== 'undefined'
                 ? params.path
-                : '/api'
+                // : '/api'
+                : ''
+
+        this.useAJAX = params.useAJAX
+
+        // this.connectHost = this.host
+        //     ? this.useAJAX
+        //         ? `${this.https ? 'https' : 'http'}://${this.host}:${this.port}`
+        //         : `${this.https ? 'wss' : 'ws'}://${this.host}:${this.port}`
+        //     : null
 
         this.connectHost = this.host
             ? `${this.https ? 'https' : 'http'}://${this.host}:${this.port}`
             : null
-        this.useAJAX = params.useAJAX
+
+        this.extraHeaders = params.extraHeaders
+        this.transports = params.transports
+        this.withCredentials = params.withCredentials
+
+
+
 
         this.device_type = params.device_type || 'BROWSER'
         this.device_info = params.device_info
@@ -175,7 +190,7 @@ class Query {
                 return this.items[id]
             },
             addItem: function (cb, obj) {
-                var id = v4()
+                var id = Date.now() + '_' + Math.random()
                 this.items[id] = {
                     callback: cb,
                     request: obj,
@@ -352,12 +367,25 @@ class Query {
                 device_type: this.device_type,
                 device_info: this.device_info
             },
+            // withCredentials:true,
             auth: {
                 token: this.token
             },
         }
 
-        if (this.debugFull) console.log('connectSocket', options)
+        if (typeof this.extraHeaders !== "undefined"){
+            options.extraHeaders = this.extraHeaders
+        }
+
+        if (typeof this.transports !== "undefined"){
+            options.transports = this.transports
+        }
+
+        if (typeof this.withCredentials !== "undefined"){
+            options.withCredentials = this.withCredentials
+        }
+
+        if (this.debugFull) console.log('connectSocket',this.connectHost, options)
         this.socket = this.connectHost
             ? io(this.connectHost, options)
             : io(options)
@@ -367,6 +395,7 @@ class Query {
         this.socket.on("connect", () => {
             if (this.debug) console.log('CONNECTED')
             this.ws_status = WS_CONNECTED
+
             if (this.oldSocketId) {
                 this.socket.emit('setOldSocketId', this.oldSocketId)
             }
@@ -635,7 +664,12 @@ class Query {
                                 break
                             }
 
-                            var btnGuid = v4()
+                            if (!document) {
+                                console.warn(`document not available`)
+                                break
+                            }
+
+                            var btnGuid = Date.now() + '_' + Math.random()
 
                             toastr[result.toastr.type](result.toastr.message +
                                 '<div style="width: 100%;"><button id="confirm_socket_query_' + btnGuid +
@@ -689,7 +723,7 @@ class Query {
                     if (!document) {
                         console.warn(`document not available`)
                     } else {
-                        const linkName = 'my_download_link' + v4()
+                        const linkName = 'my_download_link' + Date.now() + '_' + Math.random()
 
                         const nameRu = result.name_ru || result.filename
 
@@ -727,7 +761,7 @@ class Query {
         this.socket.on('log', function (data) {
             console.log('---SERVER--LOG--->', data)
         })
-        this.ws_status = WS_CONNECTED
+        // this.ws_status = WS_CONNECTED
 
         if (typeof this.afterInitConnect === 'function') {
             this.afterInitConnect(this.socket)
@@ -753,6 +787,7 @@ class Query {
 
         return await new Promise((resolve, reject) => {
             this.socketQuery(obj, res => {
+                if (this.debugFull) console.log('GO_CORE_QUERY:this.socketQuery:res==>', res)
                 resolve(res)
             })
         })
@@ -794,6 +829,7 @@ class Query {
             let authRes
             try {
                 authRes = await this.query(o)
+                if (this.debugFull) console.log('GO_CORE_QUERY:auth:res==>', authRes)
                 if (authRes.code) {
                     this.status = AUTH_ERROR
                     this.auth_response = authRes

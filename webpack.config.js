@@ -31,10 +31,10 @@ const jsLoaders = () => {
     if (isDev) {
         // loaders.push('eslint-loader')
     }
-    return loaders;
+    return loaders
 }
 
-const plugins = ()=>{
+const plugins = () => {
     // const res = [new CleanWebpackPlugin()]
     const res = []
     if (isDev) {
@@ -54,15 +54,25 @@ const plugins = ()=>{
 module.exports = {
     context: path.resolve(__dirname, 'src'),
     mode: 'development',
-    entry: ['@babel/polyfill', isDev? './example.js' : './index.js'],
+    entry: ['@babel/polyfill', isDev ? './example.js' : './index.js'],
     output: {
         filename: filename('js'),
         path: path.resolve(__dirname, 'dist'),
-        library: isDev ? undefined : (buildForES5 ? undefined :'initGoCoreQuery'),
-        libraryTarget: isDev ? undefined : (buildForES5 ? undefined :'commonjs2'),
+        library: isDev ? undefined : (buildForES5 ? undefined : 'initGoCoreQuery'),
+        libraryTarget: isDev ? undefined : (buildForES5 ? undefined : 'commonjs2'),
         // filename: 'myLib.js',
-        globalObject: isDev ? undefined : (buildForES5 ? undefined :'this'),
+        globalObject: isDev ? undefined : (buildForES5 ? undefined : 'this'),
     },
+    target: isDev ? undefined : "node",
+    externals: isDev ? undefined : {
+        bufferutil: "bufferutil",
+        "utf-8-validate": "utf-8-validate",
+    },
+    // target: 'node', // use require() & use NodeJs CommonJS style
+    // externals: [nodeExternals()], // in order to ignore all modules in node_modules folder
+    // externalsPresets: {
+    //     node: true // in order to ignore built-in modules like path, fs, etc.
+    // },
     resolve: {
         extensions: ['.js'],
         alias: {
@@ -73,7 +83,7 @@ module.exports = {
     devServer: {
         port: 3001,
         hot: isDev,
-        host:'127.0.0.1'
+        host: '127.0.0.1'
     },
     devtool: isDev ? 'source-map' : false,
     plugins: plugins(),

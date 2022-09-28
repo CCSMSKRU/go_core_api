@@ -3,7 +3,7 @@ import initQuery from '@/index'
 
 const params = {
     host: '127.0.0.1',
-    port: 9001,
+    port: 9006,
     path:'',
     https: false,
     autoAuth:false,
