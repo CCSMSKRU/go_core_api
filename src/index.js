@@ -240,6 +240,8 @@ class Query {
                 }
             },
             set: (key, val) => {
+                const old = this.storage.get(key)
+                if (old === val) return
                 if (typeof this.storeSetFn === 'function') return this.storeSetFn(key, val)
                 if (this.env === 'browser') {
                     if (this.browserStorage === 'cookie') {
@@ -403,6 +405,7 @@ class Query {
         })
 
         this.socket.on("disconnect", (reason) => {
+            this.token = this.storage.get(this.tokenStorageKey)
             if (this.debug) console.log('SOCKET DISCONNECT', reason)
             // this.ws_status = WS_NOT_CONNECTED
             // if (reason === 'io client disconnect'){
