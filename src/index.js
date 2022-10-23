@@ -241,7 +241,13 @@ class Query {
             },
             set: (key, val) => {
                 const old = this.storage.get(key)
-                if (old === val) return
+                if (old === val) {
+                    if (this.debugFull) console.log('this.storage.set: new token equal old', key, val)
+                    return
+                }
+
+                if (this.debugFull) console.log('this.storage.set: SET (key, old, new)', key, old, val)
+
                 if (typeof this.storeSetFn === 'function') return this.storeSetFn(key, val)
                 if (this.env === 'browser') {
                     if (this.browserStorage === 'cookie') {
@@ -395,6 +401,9 @@ class Query {
         // ========= SET WS Handlers =======================
 
         this.socket.on("connect", () => {
+            this.token = this.storage.get(this.tokenStorageKey)
+            this.socket.auth.token = this.token
+
             if (this.debug) console.log('CONNECTED')
             this.ws_status = WS_CONNECTED
 
@@ -406,6 +415,8 @@ class Query {
 
         this.socket.on("disconnect", (reason) => {
             this.token = this.storage.get(this.tokenStorageKey)
+            this.socket.auth.token = this.token
+
             if (this.debug) console.log('SOCKET DISCONNECT', reason)
             // this.ws_status = WS_NOT_CONNECTED
             // if (reason === 'io client disconnect'){
@@ -417,8 +428,6 @@ class Query {
 
         this.socket.on("connect_error", (err) => {
             if (this.debug) console.log('CONNECT_ERROR', err)
-
-
         })
 
         // this.socket.on("disconnect", (reason) => {
