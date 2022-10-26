@@ -8,9 +8,15 @@ const isProd = process.env.NODE_ENV === 'production'
 const isDev = !isProd
 
 const buildForES5 = process.env.ES5 === 'true'
+const target = process.env.TARGET || undefined
 
 // const filename = ext => isDev ? `bundle.${ext}` : `bundle.[hash].${ext}`
-const filename = ext => isDev ? `bundle.${ext}` : (buildForES5 ? `indexES5.${ext}` : `index.${ext}`)
+const filename = ext => isDev
+    ? `bundle.${ext}`
+    : (buildForES5
+            ? `indexES5.${ext}`
+            : `index${target ? `.${target}` : ''}.${ext}`
+    )
 
 const jsLoaders = () => {
     const loaders = [
@@ -63,11 +69,12 @@ module.exports = {
         // filename: 'myLib.js',
         globalObject: isDev ? undefined : (buildForES5 ? undefined : 'this'),
     },
-    target: isDev || buildForES5 ? undefined : "node",
+    target,
     externals: isDev || buildForES5 ? undefined : {
         bufferutil: "bufferutil",
         "utf-8-validate": "utf-8-validate",
     },
+    // externals: [nodeExternals()],
     // target: 'node', // use require() & use NodeJs CommonJS style
     // externals: [nodeExternals()], // in order to ignore all modules in node_modules folder
     // externalsPresets: {
@@ -78,7 +85,19 @@ module.exports = {
         alias: {
             '@': path.resolve(__dirname, 'src'),
             // '@core': path.resolve(__dirname, 'src/core'),
-        }
+        },
+        fallback: {
+            "fs": false,
+            "tls": false,
+            "net": false,
+            "path": false,
+            "zlib": false,
+            "http": false,
+            "https": false,
+            "stream": false,
+            "crypto": false,
+            // "crypto-browserify": require.resolve('crypto-browserify'), //if you want to use this module also don't forget npm i crypto-browserify
+        },
     },
     devServer: {
         port: 3001,
@@ -109,11 +128,53 @@ module.exports = {
                 use: jsLoaders()
 
             },
-            {test: /\.svg(\?v=\d+\.\d+\.\d+)?$/, loader: 'file-loader?mimetype=image/svg+xml'},
-            {test: /\.woff(\?v=\d+\.\d+\.\d+)?$/, loader: "file-loader?mimetype=application/font-woff"},
-            {test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/, loader: "file-loader?mimetype=application/font-woff"},
-            {test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/, loader: "file-loader?mimetype=application/octet-stream"},
-            {test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, loader: "file-loader"}
+            {
+                test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        mimetype: 'image/svg+xml'
+                    }
+                }
+            },
+            {
+                test: /\.woff(\?v=\d+\.\d+\.\d+)?$/,
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        mimetype: 'application/font-woff'
+                    }
+                }
+            },
+            {
+                test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/,
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        mimetype: 'application/font-woff'
+                    }
+                }
+            },
+            {
+                test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
+                use: {
+                    loader: 'file-loader',
+                    options: {
+                        mimetype: 'application/octet-stream'
+                    }
+                }
+            },
+            {
+                test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
+                use: {
+                    loader: 'file-loader'
+                }
+            },
+            // {test: /\.svg(\?v=\d+\.\d+\.\d+)?$/, loader: 'file-loader?mimetype=image/svg+xml'},
+            // {test: /\.woff(\?v=\d+\.\d+\.\d+)?$/, loader: "file-loader?mimetype=application/font-woff"},
+            // {test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/, loader: "file-loader?mimetype=application/font-woff"},
+            // {test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/, loader: "file-loader?mimetype=application/octet-stream"},
+            // {test: /\.eot(\?v=\d+\.\d+\.\d+)?$/, loader: "file-loader"}
         ],
     }
 }
