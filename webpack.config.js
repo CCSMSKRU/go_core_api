@@ -64,10 +64,20 @@ module.exports = {
     output: {
         filename: filename('js'),
         path: path.resolve(__dirname, 'dist'),
+        // library: {
+        //     // name: 'initGoCoreQuery',
+        //     // // type: 'commonjs-static',
+        //     // // type: 'this',
+        //     // type: 'commonjs2',
+        //
+        //     name:isDev ? undefined : (buildForES5 ? undefined : 'initGoCoreQuery'),
+        //     type:isDev ? undefined : (buildForES5 ? undefined : 'commonjs2')
+        //     // type:isDev ? undefined : (buildForES5 ? undefined : undefined)
+        // },
         library: isDev ? undefined : (buildForES5 ? undefined : 'initGoCoreQuery'),
         libraryTarget: isDev ? undefined : (buildForES5 ? undefined : 'commonjs2'),
         // filename: 'myLib.js',
-        globalObject: isDev ? undefined : (buildForES5 ? undefined : 'this'),
+        // globalObject: isDev ? undefined : (buildForES5 ? undefined : 'this'),
     },
     target,
     externals: isDev || buildForES5 ? undefined : {
@@ -86,18 +96,19 @@ module.exports = {
             '@': path.resolve(__dirname, 'src'),
             // '@core': path.resolve(__dirname, 'src/core'),
         },
-        fallback: {
-            "fs": false,
-            "tls": false,
-            "net": false,
-            "path": false,
-            "zlib": false,
-            "http": false,
-            "https": false,
-            "stream": false,
-            "crypto": false,
-            // "crypto-browserify": require.resolve('crypto-browserify'), //if you want to use this module also don't forget npm i crypto-browserify
-        },
+        // fallback: {
+        //     // "fs": false,
+        //     // "tls": false,
+        //     // "net": false,
+        //     // "path": false,
+        //     // "zlib": false,
+        //     "http": require.resolve("stream-http") ,
+        //     "https": require.resolve("https-browserify") ,
+        //     "buffer": require.resolve("buffer/"),
+        //     // "stream": false,
+        //     // "crypto": false,
+        //     // "crypto-browserify": require.resolve('crypto-browserify'), //if you want to use this module also don't forget npm i crypto-browserify
+        // },
     },
     devServer: {
         port: 3001,
