@@ -1,5 +1,5 @@
 // const initQuery = require('@/index')
-import initQuery from '@/index'
+import initQuery from './index.js'
 
 const params = {
     host: '127.0.0.1',

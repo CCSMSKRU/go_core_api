@@ -225,8 +225,8 @@ class Query {
         this.tokenStorageKey = params.tokenStorageKey || 'CCSGoCoreToken'
 
         this.storage = {
-            get: (key) => {
-                if (typeof this.storeGetFn === 'function') return this.storeGetFn(key)
+            get: async (key) => {
+                if (typeof this.storeGetFn === 'function') return await this.storeGetFn(key)
                 if (this.env === 'browser') {
                     if (this.browserStorage === 'cookie') {
                         // var re = new RegExp("(?:(?:^|.*;\s*)" + key + "\s*\=\s*([^;]*).*$)|^.*$")
@@ -239,8 +239,8 @@ class Query {
                     }
                 }
             },
-            set: (key, val) => {
-                const old = this.storage.get(key)
+            set: async (key, val) => {
+                const old = await this.storage.get(key)
                 if (old === val) {
                     if (this.debugFull) console.log('this.storage.set: new token equal old', key, val)
                     return
@@ -248,7 +248,7 @@ class Query {
 
                 if (this.debugFull) console.log('this.storage.set: SET (key, old, new)', key, old, val)
 
-                if (typeof this.storeSetFn === 'function') return this.storeSetFn(key, val)
+                if (typeof this.storeSetFn === 'function') return await this.storeSetFn(key, val)
                 if (this.env === 'browser') {
                     if (this.browserStorage === 'cookie') {
                         document.cookie = `${key}=${val}`
@@ -261,9 +261,7 @@ class Query {
             }
         }
 
-        this.token = this.storage.get(this.tokenStorageKey)
 
-        this.status = this.token || !this.autoAuth ? READY : NO_AUTH
         this.ws_status = WS_NOT_CONNECTED
         this.auth_response = null
         this.tryAuthCount = params.tryAuthCount || 10
@@ -276,11 +274,17 @@ class Query {
         this.debugFull = params.debugFull
         this.doNotDeleteCollapseDataParam = params.doNotDeleteCollapseDataParam
 
-        this.init()
+        this.init().then().catch(e=>{
+            console.error('ERROR:GoCoreQuery:init:', e)
+        })
 
     }
 
-    init() {
+    async init() {
+        this.token = await this.storage.get(this.tokenStorageKey)
+
+        this.status = this.token || !this.autoAuth ? READY : NO_AUTH
+
         if (!this.useAJAX) {
             this.connectSocket()
         }
@@ -400,8 +404,8 @@ class Query {
 
         // ========= SET WS Handlers =======================
 
-        this.socket.on("connect", () => {
-            this.token = this.storage.get(this.tokenStorageKey)
+        this.socket.on("connect", async () => {
+            this.token = await this.storage.get(this.tokenStorageKey)
             this.socket.auth.token = this.token
 
             if (this.debug) console.log('CONNECTED')
@@ -413,8 +417,8 @@ class Query {
             this.oldSocketId = this.socket.id
         })
 
-        this.socket.on("disconnect", (reason) => {
-            this.token = this.storage.get(this.tokenStorageKey)
+        this.socket.on("disconnect", async (reason) => {
+            this.token = await this.storage.get(this.tokenStorageKey)
             this.socket.auth.token = this.token
 
             if (this.debug) console.log('SOCKET DISCONNECT', reason)
@@ -439,12 +443,12 @@ class Query {
         // });
 
         // store token
-        this.socket.on('token', (token) => {
+        this.socket.on('token', async (token) => {
             if (this.debugFull) console.log('onToken', new Date(), token)
             // console.log('update TOKEN')
             this.token = token
             this.socket.auth.token = this.token
-            this.storage.set(this.tokenStorageKey, this.token)
+            await this.storage.set(this.tokenStorageKey, this.token)
             // this.socket.disconnect()
             // this.socket.connect()
 
