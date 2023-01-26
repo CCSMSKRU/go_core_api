@@ -483,9 +483,20 @@ class Query {
                     )
                 }
 
+                if (!result.toastr){
+                    result.toastr = {
+                        message: 'noToastr',
+                        type: 'info'
+                    }
+                }
+                if (!result.toastr.type) {
+                    result.toastr.type = 'info'
+                }
+
                 if (result.code !== 10) {
                     result.time = request_time
-                    var t = result.toastr
+                    var t = result?.toastr
+
                     let r_params = item.request.params || {}
 
                     let show_toastr = (() => {
