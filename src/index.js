@@ -496,6 +496,7 @@ class Query {
                 if (result.code !== 10) {
                     result.time = request_time
                     var t = result?.toastr
+                    const firstUserErrMsg = result?.data?.firstUserErrMsg
 
                     let r_params = item.request.params || {}
 
@@ -512,7 +513,7 @@ class Query {
                         && show_toastr && !r_params.checkAccess
                         && typeof toastr[t.type] === 'function'
                     ) {
-                        toastr[t.type](t.message, t.title)
+                        toastr[t.type](firstUserErrMsg || t.message, t.title)
                     }
                     if (typeof toastr == "object" && t && t.additionalMessage && typeof toastr['error'] === 'function') {
                         toastr['error'](t.additionalMessage, 'ВНИМАНИЕ!')
