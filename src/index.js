@@ -277,6 +277,8 @@ class Query {
         this.debugFull = params.debugFull
         this.doNotDeleteCollapseDataParam = params.doNotDeleteCollapseDataParam
 
+        this.status = this.token || !this.autoAuth ? READY : NO_AUTH
+
         this.init().then().catch(e=>{
             console.error('ERROR:GoCoreQuery:init:', e)
         })
@@ -286,7 +288,7 @@ class Query {
     async init() {
         this.token = await this.storage.get(this.tokenStorageKey)
 
-        this.status = this.token || !this.autoAuth ? READY : NO_AUTH
+
 
         if (!this.useAJAX) {
             this.connectSocket()

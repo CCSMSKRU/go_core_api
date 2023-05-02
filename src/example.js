@@ -3,12 +3,12 @@ import initQuery from './index.js'
 
 const params = {
     host: '127.0.0.1',
-    port: 9006,
+    port: 9001,
     path:'',
     https: false,
     autoAuth:false,
     authFunction:()=>{
-        alert('Auth')
+        alert('authFunction')
     },
     // login:'ivantgco@gmail.com',
     // password:'123',
@@ -46,11 +46,14 @@ async function init() {
     //         this.onNewPreview(res.filename)
     // })
 
-    query(o2, (r)=>{
-        console.log('r', r)
-        // debugger;
-        // throw 'dasd'
-    })
+    // query(o2, (r)=>{
+    //     console.log('r', r)
+    //     // debugger;
+    //     // throw 'dasd'
+    // })
+
+    const res = await query(o2)
+    console.log('res===', res)
 
     // const me = await query(o2)
     //
