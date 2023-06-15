@@ -288,6 +288,8 @@ class Query {
     async init() {
         this.token = await this.storage.get(this.tokenStorageKey)
 
+        if (this.debugFull) console.log('IN init(): TOKEN==>', this.token)
+
 
 
         if (!this.useAJAX) {
