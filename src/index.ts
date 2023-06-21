@@ -71,7 +71,8 @@ function tryDo(obj, cb) {
 
     // Запускаем авторизацию и вызываем запрос заново (он попадет в цикл ожидание пока авторизация не пройдет)
     if (this.status === NO_AUTH) {
-        if (this.debugFull) console.log('Еще не авторизованы. Запустим процесс и вызовем запрос снова', obj)
+        if (this.debugFull) console.log('Еще не авторизованы. Запустим процесс и вызовем запрос снова',
+            {obj, res:this.response})
         this.auth()
         if (!this.autoAuth) return cb(null, this.response)
         return tryDo.call(this, obj, cb)
@@ -79,7 +80,7 @@ function tryDo(obj, cb) {
 
     // Производится авторизация, немного ждем и вызываем заново. Таким образом рано или поздно статус изменется
     if (this.status === IN_AUTH) {
-        if (this.debugFull) console.log('Еще производится авторизация, ждем')
+        if (this.debugFull) console.log('Еще производится авторизация, ждем', {res:this.response})
         setTimeout(() => {
             if (!this.autoAuth) {
                 this.status = NO_AUTH
