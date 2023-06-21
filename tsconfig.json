@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+//    "module": "commonjs",
+//    "esModuleInterop": true,
+//    "target": "es6",
+//    "moduleResolution": "node",
+//    "sourceMap": true,
+//    "baseUrl": "",
+//    "lib": ["es2020.string"],
+////    "outDir": "dist"
+    "watch": true
+  },
+  "lib": ["es5"],
+  "exclude": ["node_modules", "OLD"]
+}

@@ -421,11 +421,13 @@ class Query {
         this.socket.emit('socketQuery', obj, id)
     }
 
-    connectSocket() {
+    async connectSocket() {
         if (this.ws_status !== WS_NOT_CONNECTED) {
             return
         }
         this.ws_status = WS_CONNECTING
+
+        if (!this.token) this.token = await this.storage.get(this.tokenStorageKey)
 
         const options: QueryOptions = {
             path: this.url.replace(/\/$/, ''),
