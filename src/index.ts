@@ -881,19 +881,29 @@ class Query {
 
             return await new Promise((resolve) => {
                 this.tryConnectCnt++
-                if (this.tryConnectCnt > 40){ // Первые 2 секунды
-                    this.tryConnectTimeout = 200
-                    if (this.debugFull) console.log('tryConnectTimeout changed to 200')
-                } else if (this.tryConnectCnt > 55){ // Следующие 3 сек. Итого после 5с
-                    this.tryConnectTimeout = 500
-                    if (this.debugFull) console.log('tryConnectTimeout changed to 500')
-                }else if (this.tryConnectCnt > 65){ // Следующие 5 сек.  Итого после 10с
-                    this.tryConnectTimeout = 1000
-                    if (this.debugFull) console.log('tryConnectTimeout changed to 1000')
-                }else if (this.tryConnectCnt > 65){ // Следующие 20 сек. Итого после 30с
-                    this.tryConnectTimeout = 5000
-                    if (this.debugFull) console.log('tryConnectTimeout changed to 5000')
+
+                if (this.tryConnectCnt > 70){ // После 30с
+                    if (this.tryConnectTimeout !== 5000) {
+                        this.tryConnectTimeout = 5000
+                        if (this.debugFull) console.log('tryConnectTimeout changed to 5000')
+                    }
+                } else if (this.tryConnectCnt > 65){ // После 10с
+                    if (this.tryConnectTimeout !== 1000) {
+                        this.tryConnectTimeout = 1000
+                        if (this.debugFull) console.log('tryConnectTimeout changed to 1000')
+                    }
+                } else if (this.tryConnectCnt > 55) { // После 5с
+                    if (this.tryConnectTimeout !== 500) {
+                        this.tryConnectTimeout = 500
+                        if (this.debugFull) console.log('tryConnectTimeout changed to 500')
+                    }
+                } else if (this.tryConnectCnt > 40){ // После 2с
+                    if (this.tryConnectTimeout !== 200) {
+                        this.tryConnectTimeout = 200
+                        if (this.debugFull) console.log('tryConnectTimeout changed to 200')
+                    }
                 }
+
                 setTimeout(async () => {
                     resolve(await this.queryWS(obj))
                 }, this.tryConnectTimeout || 50)

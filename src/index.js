@@ -896,25 +896,33 @@ var Query = /** @class */ (function () {
                             console.log('Socket not ready now', this.ws_status);
                         return [4 /*yield*/, new Promise(function (resolve) {
                                 _this.tryConnectCnt++;
-                                if (_this.tryConnectCnt > 40) { // Первые 2 секунды
-                                    _this.tryConnectTimeout = 200;
-                                    if (_this.debugFull)
-                                        console.log('tryConnectTimeout changed to 200');
+                                if (_this.tryConnectCnt > 70) { // После 30с
+                                    if (_this.tryConnectTimeout !== 5000) {
+                                        _this.tryConnectTimeout = 5000;
+                                        if (_this.debugFull)
+                                            console.log('tryConnectTimeout changed to 5000');
+                                    }
                                 }
-                                else if (_this.tryConnectCnt > 55) { // Следующие 3 сек. Итого после 5с
-                                    _this.tryConnectTimeout = 500;
-                                    if (_this.debugFull)
-                                        console.log('tryConnectTimeout changed to 500');
+                                else if (_this.tryConnectCnt > 65) { // После 10с
+                                    if (_this.tryConnectTimeout !== 1000) {
+                                        _this.tryConnectTimeout = 1000;
+                                        if (_this.debugFull)
+                                            console.log('tryConnectTimeout changed to 1000');
+                                    }
                                 }
-                                else if (_this.tryConnectCnt > 65) { // Следующие 5 сек.  Итого после 10с
-                                    _this.tryConnectTimeout = 1000;
-                                    if (_this.debugFull)
-                                        console.log('tryConnectTimeout changed to 1000');
+                                else if (_this.tryConnectCnt > 55) { // После 5с
+                                    if (_this.tryConnectTimeout !== 500) {
+                                        _this.tryConnectTimeout = 500;
+                                        if (_this.debugFull)
+                                            console.log('tryConnectTimeout changed to 500');
+                                    }
                                 }
-                                else if (_this.tryConnectCnt > 65) { // Следующие 20 сек. Итого после 30с
-                                    _this.tryConnectTimeout = 5000;
-                                    if (_this.debugFull)
-                                        console.log('tryConnectTimeout changed to 5000');
+                                else if (_this.tryConnectCnt > 40) { // После 2с
+                                    if (_this.tryConnectTimeout !== 200) {
+                                        _this.tryConnectTimeout = 200;
+                                        if (_this.debugFull)
+                                            console.log('tryConnectTimeout changed to 200');
+                                    }
                                 }
                                 setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
                                     var _a;
