@@ -198,6 +198,9 @@ class Query {
 
     socket:any
 
+    tryConnectCnt:number
+    tryConnectTimeout:number
+
     oldSocketId?:string
 
     constructor(params?: QueryParams) {
@@ -327,6 +330,11 @@ class Query {
         this.doNotDeleteCollapseDataParam = params.doNotDeleteCollapseDataParam
 
         this.status = this.token || !this.autoAuth ? READY : NO_AUTH
+
+        // Будем плавно увеличивать таймаут, если сразу не удается подключиться.
+        // Сбросим после успешного подключения
+        this.tryConnectCnt = 0
+        this.tryConnectTimeout = 50
 
         this.init().then().catch(e => {
             console.error('ERROR:GoCoreQuery:init:', e)
@@ -872,11 +880,32 @@ class Query {
             if (this.debugFull) console.log('Socket not ready now', this.ws_status)
 
             return await new Promise((resolve) => {
+                this.tryConnectCnt++
+                if (this.tryConnectCnt > 40){ // Первые 2 секунды
+                    this.tryConnectTimeout = 200
+                    if (this.debugFull) console.log('tryConnectTimeout changed to 200')
+                } else if (this.tryConnectCnt > 55){ // Следующие 3 сек. Итого после 5с
+                    this.tryConnectTimeout = 500
+                    if (this.debugFull) console.log('tryConnectTimeout changed to 500')
+                }else if (this.tryConnectCnt > 65){ // Следующие 5 сек.  Итого после 10с
+                    this.tryConnectTimeout = 1000
+                    if (this.debugFull) console.log('tryConnectTimeout changed to 1000')
+                }else if (this.tryConnectCnt > 65){ // Следующие 20 сек. Итого после 30с
+                    this.tryConnectTimeout = 5000
+                    if (this.debugFull) console.log('tryConnectTimeout changed to 5000')
+                }
                 setTimeout(async () => {
                     resolve(await this.queryWS(obj))
-                }, 50)
+                }, this.tryConnectTimeout || 50)
             })
         }
+
+        // Сбросим значения
+        if (this.tryConnectCnt){
+            this.tryConnectCnt = 0
+            this.tryConnectTimeout = 50
+        }
+
 
         return await new Promise((resolve, reject) => {
             this.socketQuery(obj, res => {
