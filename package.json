@@ -1,6 +1,6 @@
 {
   "name": "go_core_query",
-  "version": "0.0.56",
+  "version": "0.0.57",
   "description": "The package allows you to connect to the GoCore core via socket or regular http (s) requests. Works in various environments where there is javascript.",
   "main": "dist/index.js",
   "scripts": {
