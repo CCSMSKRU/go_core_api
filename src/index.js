@@ -593,7 +593,7 @@ var Query = /** @class */ (function () {
                         }); });
                         // queryCallback
                         this.socket.on('socketQueryCallback', function (callback_id, result, request_time) {
-                            var _a, _b;
+                            var _a, _b, _c;
                             var item = _this.socketQuery_stack.getItem(callback_id);
                             if (typeof item !== "object")
                                 return;
@@ -673,7 +673,7 @@ var Query = /** @class */ (function () {
                                         }
                                     }
                                     // Приведем к старому формату rows
-                                    if (item.request.isNotApi202205 && Array.isArray((_b = result.data) === null || _b === void 0 ? void 0 : _b.rows)) {
+                                    if (item.request.isNotApi202205 && Array.isArray((_b = result.data) === null || _b === void 0 ? void 0 : _b.rows) && ((_c = result === null || result === void 0 ? void 0 : result.data) === null || _c === void 0 ? void 0 : _c.additionalData)) {
                                         result.data_columns = result.data.additionalData.data_columns;
                                         result.extra_data = result.data.additionalData;
                                         result.data = result.data.rows;

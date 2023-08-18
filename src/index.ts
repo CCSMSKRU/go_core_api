@@ -633,7 +633,7 @@ class Query {
 
                     }
                     // Приведем к старому формату rows
-                    if (item.request.isNotApi202205 && Array.isArray(result.data?.rows)) {
+                    if (item.request.isNotApi202205 && Array.isArray(result.data?.rows) && result?.data?.additionalData) {
 
                         result.data_columns = result.data.additionalData.data_columns
                         result.extra_data = result.data.additionalData
