@@ -75,7 +75,7 @@ module.exports = {
         //     // type:isDev ? undefined : (buildForES5 ? undefined : undefined)
         // },
         library: isDev ? undefined : (buildForES5 ? undefined : 'initGoCoreQuery'),
-        libraryTarget: isDev ? undefined : (buildForES5 ? undefined : 'commonjs2'),
+        libraryTarget: isDev ? undefined : (buildForES5 ? undefined : 'umd'),
         // filename: 'myLib.js',
         // globalObject: isDev ? undefined : (buildForES5 ? undefined : 'this'),
     },

@@ -151,13 +151,16 @@ function tryDo(obj, cb) {
 
 }
 
-// @ts-ignore
-let toastr = window?.toastr
-// @ts-ignore
-let bootbox = window?.bootbox
+const isWindow = (typeof window === 'object' && window)
+const globalObj = isWindow ? window : {}
 
 // @ts-ignore
-let $ = window?.$
+let toastr = isWindow ? globalObj?.toastr : undefined
+// @ts-ignore
+let bootbox = isWindow ? globalObj?.bootbox : undefined
+
+// // @ts-ignore
+// let $ = window?.$
 
 class Query {
     https: boolean
@@ -797,7 +800,7 @@ class Query {
                             const confirmBtn = document.getElementById('confirm_socket_query_' + btnGuid)
                             confirmBtn.addEventListener('click', e => {
                                 item.request.params.confirm = true
-                                window?.setTimeout(function () {
+                                setTimeout(function () {
                                     toastr.clear()
                                 }, 1000)
                                 this.do(item.request, item.callback)
@@ -806,7 +809,7 @@ class Query {
                             const cancelBtn = document.getElementById('cancel_socket_query_' + btnGuid)
                             cancelBtn.addEventListener('click', e => {
                                 toastr['info'](cancelMsg)
-                                window?.setTimeout(function () {
+                                setTimeout(function () {
                                     toastr.clear()
                                 }, 1000)
                                 item.callback(result)
@@ -971,7 +974,7 @@ class Query {
                     }, 30000)
                     return
                 }
-                this.token = authRes.token
+                this.token = authRes?.data?.token || authRes?.token
 
                 this.status = READY
                 return authRes
@@ -1057,7 +1060,5 @@ export default function init(params = {}) {
     return query_.do.bind(query_)
 }
 
-if (typeof window === "object" && window) {
-    // @ts-ignore
-    window.initGoCoreQuery = init
-}
+// @ts-ignore
+globalObj?.initGoCoreQuery = init

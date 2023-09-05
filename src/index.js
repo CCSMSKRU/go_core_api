@@ -211,12 +211,14 @@ function tryDo(obj, cb) {
         return cb(new Error("\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439 \u0441\u0442\u0430\u0442\u0443\u0441: ".concat(this.status)));
     }
 }
+var isWindow = (typeof window === 'object' && window);
+var globalObj = isWindow ? window : {};
 // @ts-ignore
-var toastr = window === null || window === void 0 ? void 0 : window.toastr;
+var toastr = isWindow ? globalObj === null || globalObj === void 0 ? void 0 : globalObj.toastr : undefined;
 // @ts-ignore
-var bootbox = window === null || window === void 0 ? void 0 : window.bootbox;
-// @ts-ignore
-var $ = window === null || window === void 0 ? void 0 : window.$;
+var bootbox = isWindow ? globalObj === null || globalObj === void 0 ? void 0 : globalObj.bootbox : undefined;
+// // @ts-ignore
+// let $ = window?.$
 var Query = /** @class */ (function () {
     function Query(params) {
         var _this = this;
@@ -812,7 +814,7 @@ var Query = /** @class */ (function () {
                                             var confirmBtn = document.getElementById('confirm_socket_query_' + btnGuid);
                                             confirmBtn.addEventListener('click', function (e) {
                                                 item.request.params.confirm = true;
-                                                window === null || window === void 0 ? void 0 : window.setTimeout(function () {
+                                                setTimeout(function () {
                                                     toastr.clear();
                                                 }, 1000);
                                                 _this["do"](item.request, item.callback);
@@ -820,7 +822,7 @@ var Query = /** @class */ (function () {
                                             var cancelBtn = document.getElementById('cancel_socket_query_' + btnGuid);
                                             cancelBtn.addEventListener('click', function (e) {
                                                 toastr['info'](cancelMsg);
-                                                window === null || window === void 0 ? void 0 : window.setTimeout(function () {
+                                                setTimeout(function () {
                                                     toastr.clear();
                                                 }, 1000);
                                                 item.callback(result);
@@ -991,13 +993,14 @@ var Query = /** @class */ (function () {
                         tryQ = function () { return __awaiter(_this, void 0, void 0, function () {
                             var authRes, e_2;
                             var _this = this;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
+                            var _a;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
                                     case 0:
-                                        _a.trys.push([0, 2, , 6]);
+                                        _b.trys.push([0, 2, , 6]);
                                         return [4 /*yield*/, this.query(o)];
                                     case 1:
-                                        authRes = _a.sent();
+                                        authRes = _b.sent();
                                         if (this.debugFull)
                                             console.log('GO_CORE_QUERY:auth:res==>', authRes);
                                         if (authRes.code) {
@@ -1009,11 +1012,11 @@ var Query = /** @class */ (function () {
                                             }, 30000);
                                             return [2 /*return*/];
                                         }
-                                        this.token = authRes.token;
+                                        this.token = ((_a = authRes === null || authRes === void 0 ? void 0 : authRes.data) === null || _a === void 0 ? void 0 : _a.token) || (authRes === null || authRes === void 0 ? void 0 : authRes.token);
                                         this.status = READY;
                                         return [2 /*return*/, authRes];
                                     case 2:
-                                        e_2 = _a.sent();
+                                        e_2 = _b.sent();
                                         counter++;
                                         if (!(counter <= this.tryAuthCount)) return [3 /*break*/, 4];
                                         console.log("Error while do auth query. Try:".concat(counter, " of ").concat(this.tryAuthCount, ". Wait ").concat(this.tryAuthPause));
@@ -1033,7 +1036,7 @@ var Query = /** @class */ (function () {
                                                 }); }, _this.tryAuthPause);
                                             })];
                                     case 3:
-                                        authRes = _a.sent();
+                                        authRes = _b.sent();
                                         return [2 /*return*/, authRes];
                                     case 4:
                                         console.log("Error while do auth query. Finish", e_2);
@@ -1125,7 +1128,5 @@ function init(params) {
     return query_["do"].bind(query_);
 }
 exports["default"] = init;
-if (typeof window === "object" && window) {
-    // @ts-ignore
-    window.initGoCoreQuery = init;
-}
+// @ts-ignore
+globalObj === null || globalObj === void 0 ? void 0 : globalObj.initGoCoreQuery = init;
