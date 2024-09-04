@@ -1,4 +1,8 @@
 export interface QueryParams {
+    skipSetTokenOnLogin?: boolean
+    loginTokenFieldName?: string
+    loginObject?: string
+    loginCommand?: string
     https?: boolean;
     host?: string;
     port?: number | string;

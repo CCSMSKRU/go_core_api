@@ -25,7 +25,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -46,7 +46,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
 var socket_io_client_1 = require("socket.io-client");
 var WS_NOT_CONNECTED = 'WS_NOT_CONNECTED';
 var WS_CONNECTED = 'WS_CONNECTED';
@@ -140,15 +140,16 @@ function tryDo(obj, cb) {
         var res_1;
         var counter_1 = 0;
         var q_1 = function () { return __awaiter(_this, void 0, void 0, function () {
-            var e_1;
+            var tkn, e_1;
             var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 6]);
+                        _b.trys.push([0, 2, , 6]);
                         return [4 /*yield*/, this.query(obj)];
                     case 1:
-                        res_1 = _a.sent();
+                        res_1 = _b.sent();
                         this.response = res_1;
                         if (res_1.code) {
                             // Сессия стухла
@@ -160,9 +161,22 @@ function tryDo(obj, cb) {
                             // Логическая ошибка
                             return [2 /*return*/, cb(null, res_1)];
                         }
+                        // Установим токен если это был запрос авторизации
+                        if (!this.skipSetTokenOnLogin
+                            && obj.command === this.loginCommand
+                            && ((_a = obj.object) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === this.loginObject) {
+                            tkn = (res_1 === null || res_1 === void 0 ? void 0 : res_1.data)
+                                ? res_1.data[this.loginTokenFieldName]
+                                : res_1[this.loginTokenFieldName];
+                            if (tkn) {
+                                this.token = tkn;
+                                this.socket.auth.token = this.token;
+                                this.storage.set(this.tokenStorageKey, this.token);
+                            }
+                        }
                         return [2 /*return*/, cb(null, res_1)];
                     case 2:
-                        e_1 = _a.sent();
+                        e_1 = _b.sent();
                         // Произошла некая ошибка при запросе (например пропало соединение с сервером)
                         // Будем повторять несколько раз, прежде чем выдать ошибку
                         counter_1++;
@@ -184,7 +198,7 @@ function tryDo(obj, cb) {
                                 }); }, _this.tryPause);
                             })];
                     case 3:
-                        res_1 = _a.sent();
+                        res_1 = _b.sent();
                         return [2 /*return*/, res_1];
                     case 4:
                         console.log("Error while do query. Finish", e_1);
@@ -283,6 +297,10 @@ var Query = /** @class */ (function () {
             ? params.browserStorage
             : 'cookie';
         this.tokenStorageKey = params.tokenStorageKey || 'CCSGoCoreToken';
+        this.skipSetTokenOnLogin = params.skipSetTokenOnLogin;
+        this.loginCommand = params.loginCommand || 'login';
+        this.loginObject = params.loginObject ? String(params.loginObject).toLowerCase() : 'user';
+        this.loginTokenFieldName = params.loginTokenFieldName || 'token';
         this.storage = {
             get: function (key) { return __awaiter(_this, void 0, void 0, function () {
                 return __generator(this, function (_a) {
@@ -357,7 +375,7 @@ var Query = /** @class */ (function () {
         // Сбросим после успешного подключения
         this.tryConnectCnt = 0;
         this.tryConnectTimeout = 50;
-        this.init().then()["catch"](function (e) {
+        this.init().then().catch(function (e) {
             console.error('ERROR:GoCoreQuery:init:', e);
         });
     }
@@ -381,10 +399,10 @@ var Query = /** @class */ (function () {
             });
         });
     };
-    Query.prototype.query = function (obj) {
-        if (obj === void 0) { obj = {}; }
-        return __awaiter(this, void 0, void 0, function () {
+    Query.prototype.query = function () {
+        return __awaiter(this, arguments, void 0, function (obj) {
             var _a;
+            if (obj === void 0) { obj = {}; }
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -402,10 +420,10 @@ var Query = /** @class */ (function () {
             });
         });
     };
-    Query.prototype.queryAJAX = function (obj) {
-        if (obj === void 0) { obj = {}; }
-        return __awaiter(this, void 0, void 0, function () {
+    Query.prototype.queryAJAX = function () {
+        return __awaiter(this, arguments, void 0, function (obj) {
             var httpS, data, options;
+            if (obj === void 0) { obj = {}; }
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -495,7 +513,7 @@ var Query = /** @class */ (function () {
                         options = {
                             path: this.url.replace(/\/$/, ''),
                             query: {
-                                type: 'WEB',
+                                type: 'WEB', // deprecated
                                 device_type: this.device_type,
                                 device_info: this.device_info
                             },
@@ -516,8 +534,8 @@ var Query = /** @class */ (function () {
                         if (this.debugFull)
                             console.log('connectSocket', this.connectHost, options);
                         this.socket = this.connectHost
-                            ? (0, socket_io_client_1["default"])(this.connectHost, options)
-                            : (0, socket_io_client_1["default"])(options);
+                            ? (0, socket_io_client_1.default)(this.connectHost, options)
+                            : (0, socket_io_client_1.default)(options);
                         // ========= SET WS Handlers =======================
                         this.socket.on("connect", function () { return __awaiter(_this, void 0, void 0, function () {
                             var _a;
@@ -763,7 +781,7 @@ var Query = /** @class */ (function () {
                                                             else {
                                                                 item.request.params.confirm = true;
                                                             }
-                                                            _this["do"](item.request, item.callback);
+                                                            _this.do(item.request, item.callback);
                                                         }
                                                     },
                                                     error: {
@@ -817,7 +835,7 @@ var Query = /** @class */ (function () {
                                                 setTimeout(function () {
                                                     toastr.clear();
                                                 }, 1000);
-                                                _this["do"](item.request, item.callback);
+                                                _this.do(item.request, item.callback);
                                             });
                                             var cancelBtn = document.getElementById('cancel_socket_query_' + btnGuid);
                                             cancelBtn.addEventListener('click', function (e) {
@@ -880,10 +898,10 @@ var Query = /** @class */ (function () {
             });
         });
     };
-    Query.prototype.queryWS = function (obj) {
-        if (obj === void 0) { obj = {}; }
-        return __awaiter(this, void 0, void 0, function () {
+    Query.prototype.queryWS = function () {
+        return __awaiter(this, arguments, void 0, function (obj) {
             var _this = this;
+            if (obj === void 0) { obj = {}; }
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1074,7 +1092,7 @@ var Query = /** @class */ (function () {
             });
         });
     };
-    Query.prototype["do"] = function (obj, cb) {
+    Query.prototype.do = function (obj, cb) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
@@ -1125,8 +1143,8 @@ function init(params) {
     //
     // console.log('Me', me)
     // console.log('query_.do==>', typeof query_.do)
-    return query_["do"].bind(query_);
+    return { api: query_.do.bind(query_), instance: query_ };
 }
-exports["default"] = init;
+exports.default = init;
 // @ts-ignore
 globalObj === null || globalObj === void 0 ? void 0 : globalObj.initGoCoreQuery = init;

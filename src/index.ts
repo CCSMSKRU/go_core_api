@@ -111,6 +111,23 @@ function tryDo(obj, cb) {
                     // Логическая ошибка
                     return cb(null, res)
                 }
+
+                // Установим токен если это был запрос авторизации
+                if (!this.skipSetTokenOnLogin
+                    && obj.command === this.loginCommand
+                    && obj.object?.toLowerCase() === this.loginObject)
+                {
+
+                    const tkn = res?.data
+                        ? res.data[this.loginTokenFieldName]
+                        : res[this.loginTokenFieldName]
+                    if (tkn) {
+                        this.token = tkn
+                        this.socket.auth.token = this.token
+                        this.storage.set(this.tokenStorageKey, this.token)
+                    }
+                }
+
                 return cb(null, res)
             } catch (e) {
                 // Произошла некая ошибка при запросе (например пропало соединение с сервером)
@@ -205,6 +222,10 @@ class Query {
     tryConnectTimeout:number
 
     oldSocketId?:string
+    loginCommand: string
+    loginObject: string
+    loginTokenFieldName: string
+    skipSetTokenOnLogin: boolean
 
     constructor(params?: QueryParams) {
         if (!params) params = {}
@@ -281,6 +302,11 @@ class Query {
             : 'cookie'
 
         this.tokenStorageKey = params.tokenStorageKey || 'CCSGoCoreToken'
+
+        this.skipSetTokenOnLogin = params.skipSetTokenOnLogin
+        this.loginCommand = params.loginCommand || 'login'
+        this.loginObject = params.loginObject ? String(params.loginObject).toLowerCase() : 'user'
+        this.loginTokenFieldName = params.loginTokenFieldName || 'token'
 
         this.storage = {
             get: async (key) => {
@@ -1036,7 +1062,7 @@ class Query {
     }
 }
 
-export default function init(params = {}) {
+export default function init(params = {}) : {api: any, instance: any} {
     const query_ = new Query({...params})
 
     // const o2 = {
@@ -1057,7 +1083,7 @@ export default function init(params = {}) {
     // console.log('Me', me)
 
     // console.log('query_.do==>', typeof query_.do)
-    return query_.do.bind(query_)
+    return {api: query_.do.bind(query_), instance:query_}
 }
 
 // @ts-ignore
