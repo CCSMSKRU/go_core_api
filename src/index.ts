@@ -77,7 +77,7 @@ function tryDo(obj, cb) {
     // Запускаем авторизацию и вызываем запрос заново (он попадет в цикл ожидание пока авторизация не пройдет)
     if (this.status === NO_AUTH) {
         if (this.debugFull) console.log('Not authorized yet. Start process and call request again',
-            {obj, res:this.response})
+            {obj, res: this.response})
         this.auth()
         if (!this.autoAuth) return cb(null, this.response)
         return tryDo.call(this, obj, cb)
@@ -85,7 +85,7 @@ function tryDo(obj, cb) {
 
     // Производится авторизация, немного ждем и вызываем заново. Таким образом рано или поздно статус изменется
     if (this.status === IN_AUTH) {
-        if (this.debugFull) console.log('Still in auth process. Wait', {res:this.response})
+        if (this.debugFull) console.log('Still in auth process. Wait', {res: this.response})
         setTimeout(() => {
             if (!this.autoAuth) {
                 this.status = NO_AUTH
@@ -120,8 +120,7 @@ function tryDo(obj, cb) {
                 // Установим токен если это был запрос авторизации
                 if (!this.skipSetTokenOnLogin
                     && obj.command === this.loginCommand
-                    && obj.object?.toLowerCase() === this.loginObject)
-                {
+                    && obj.object?.toLowerCase() === this.loginObject) {
 
                     const tkn = res?.data
                         ? res.data[this.loginTokenFieldName]
@@ -222,12 +221,12 @@ class Query {
     doNotDeleteCollapseDataParam: any
     status: string
 
-    socket:any
+    socket: any
 
-    tryConnectCnt:number
-    tryConnectTimeout:number
+    tryConnectCnt: number
+    tryConnectTimeout: number
 
-    oldSocketId?:string
+    oldSocketId?: string
     loginCommand: string
     loginObject: string
     loginTokenFieldName: string
@@ -584,6 +583,8 @@ class Query {
                 dataIsObj = item.request.params.dataIsObj
             }
 
+            let resultData = result?.data || result
+
             if (typeof result === 'object' && result !== null) {
                 if (typeof result.code === 'undefined') {
                     console.log(
@@ -704,6 +705,8 @@ class Query {
                     }
                 }
 
+                resultData = result?.data || result
+
 
                 if (result.code === 10) {
 
@@ -724,13 +727,14 @@ class Query {
                         return false
                     }
 
-                    item.request.params.confirmKey = result.confirmKey || result.key
-                    var cancelMsg = result.cancelMsg ?? getMsg('cancelMsg')
-                    var okBtnText = result.okBtnText ?? getMsg('okBtnText')
-                    var cancelBtnText = result.cancelBtnText ?? getMsg('cancelBtnText')
-                    switch (result.confirmType) {
+                    item.request.params.confirmKey = resultData.confirmKey || resultData.key
+                    var cancelMsg = resultData.cancelMsg ?? getMsg('cancelMsg')
+                    var okBtnText = resultData.okBtnText ?? getMsg('okBtnText')
+                    var cancelBtnText = resultData.cancelBtnText ?? getMsg('cancelBtnText')
 
-                        case 'dialog' :
+                    switch (resultData.confirmType) {
+
+                        case 'dialog':
                             if (!bootbox || typeof bootbox.dialog !== 'function') {
                                 console.warn('bootbox.dialog is not installed (is not a function)')
                                 break
@@ -738,7 +742,7 @@ class Query {
 
                             var html = ''
 
-                            if (result.responseType == 'text') {
+                            if (resultData.responseType == 'text') {
                                 html = result.toastr.message +
                                     '<input style="margin-top: 10px;" type="text" ' +
                                     'class="form-control" id="server-confirm-input" />'
@@ -755,15 +759,15 @@ class Query {
                                         label: okBtnText,
                                         callback: () => {
 
-                                            if (result.responseType === 'text') {
+                                            if (resultData.responseType === 'text') {
 
                                                 item.request.params.confirm = $('#server-confirm-input').val()
 
-                                            } else if (result.responseType === 'custom') {
+                                            } else if (resultData.responseType === 'custom') {
 
                                                 const resObj = {}
                                                 bbd1
-                                                    .find(result.inputsClass ? '.' + result.inputsClass : '.server-confirm-input')
+                                                    .find(resultData.inputsClass ? '.' + resultData.inputsClass : '.server-confirm-input')
                                                     .each(function (index) {
                                                         switch ($(this).attr('type')) {
                                                             case 'checkbox':
@@ -868,19 +872,19 @@ class Query {
 
                 }
 
-                if (result.system_download_now) {
+                if (resultData.system_download_now) {
                     if (!document) {
                         console.warn(`document not available`)
                     } else {
                         const linkName = 'my_download_link' + Date.now() + '_' + Math.random()
 
-                        const nameRu = result.name_ru || result.filename
+                        const nameRu = resultData.name_ru || resultData.filename
 
                         const body_ = document.getElementsByTagName('body')[0]
 
                         const a = document.createElement('a')
                         a.setAttribute('id', linkName)
-                        a.setAttribute('href', result.path + result.filename)
+                        a.setAttribute('href', resultData.path + resultData.filename)
                         a.setAttribute('download', nameRu)
                         a.setAttribute('style', "display:none;")
                         body_.appendChild(a)
@@ -930,12 +934,12 @@ class Query {
             return await new Promise((resolve) => {
                 this.tryConnectCnt++
 
-                if (this.tryConnectCnt > 70){ // После 30с
+                if (this.tryConnectCnt > 70) { // После 30с
                     if (this.tryConnectTimeout !== 5000) {
                         this.tryConnectTimeout = 5000
                         if (this.debugFull) console.log('tryConnectTimeout changed to 5000')
                     }
-                } else if (this.tryConnectCnt > 65){ // После 10с
+                } else if (this.tryConnectCnt > 65) { // После 10с
                     if (this.tryConnectTimeout !== 1000) {
                         this.tryConnectTimeout = 1000
                         if (this.debugFull) console.log('tryConnectTimeout changed to 1000')
@@ -945,7 +949,7 @@ class Query {
                         this.tryConnectTimeout = 500
                         if (this.debugFull) console.log('tryConnectTimeout changed to 500')
                     }
-                } else if (this.tryConnectCnt > 40){ // После 2с
+                } else if (this.tryConnectCnt > 40) { // После 2с
                     if (this.tryConnectTimeout !== 200) {
                         this.tryConnectTimeout = 200
                         if (this.debugFull) console.log('tryConnectTimeout changed to 200')
@@ -959,7 +963,7 @@ class Query {
         }
 
         // Сбросим значения
-        if (this.tryConnectCnt){
+        if (this.tryConnectCnt) {
             this.tryConnectCnt = 0
             this.tryConnectTimeout = 50
         }
@@ -1059,7 +1063,6 @@ class Query {
     }
 
     async do(obj, cb) {
-        // if (obj?.isNotApi202205) alert('asas')
         if (typeof cb === 'function') {
             return tryDo.call(this, obj, (err, res) => {
                 try {
@@ -1081,7 +1084,7 @@ class Query {
     }
 }
 
-export default function init(params = {}) : {api: any, instance: any} {
+export default function init(params = {}): { api: any, instance: any } {
     const query_ = new Query({...params})
 
     // const o2 = {
@@ -1102,7 +1105,7 @@ export default function init(params = {}) : {api: any, instance: any} {
     // console.log('Me', me)
 
     // console.log('query_.do==>', typeof query_.do)
-    return {api: query_.do.bind(query_), instance:query_}
+    return {api: query_.do.bind(query_), instance: query_}
 }
 
 // @ts-ignore

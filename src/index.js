@@ -629,6 +629,7 @@ var Query = /** @class */ (function () {
                             if (item.request.params) {
                                 dataIsObj = item.request.params.dataIsObj;
                             }
+                            var resultData = (result === null || result === void 0 ? void 0 : result.data) || result;
                             if (typeof result === 'object' && result !== null) {
                                 if (typeof result.code === 'undefined') {
                                     console.log("%c ".concat(alias, "The server function must return \"code\". \n                        Use the standard response, for example: \nreturn new UserOk('noToastr',{data})"), 'background: #ffd582; color: #000');
@@ -726,6 +727,7 @@ var Query = /** @class */ (function () {
                                         results: [primal_res]
                                     };
                                 }
+                                resultData = (result === null || result === void 0 ? void 0 : result.data) || result;
                                 if (result.code === 10) {
                                     // SERVER EXAMPLE
                                     //var confirm = obj.confirm;
@@ -742,18 +744,18 @@ var Query = /** @class */ (function () {
                                         _this.socketQuery_stack.removeItem(callback_id);
                                         return false;
                                     }
-                                    item.request.params.confirmKey = result.confirmKey || result.key;
-                                    var cancelMsg = (_d = result.cancelMsg) !== null && _d !== void 0 ? _d : getMsg('cancelMsg');
-                                    var okBtnText = (_e = result.okBtnText) !== null && _e !== void 0 ? _e : getMsg('okBtnText');
-                                    var cancelBtnText = (_f = result.cancelBtnText) !== null && _f !== void 0 ? _f : getMsg('cancelBtnText');
-                                    switch (result.confirmType) {
+                                    item.request.params.confirmKey = resultData.confirmKey || resultData.key;
+                                    var cancelMsg = (_d = resultData.cancelMsg) !== null && _d !== void 0 ? _d : getMsg('cancelMsg');
+                                    var okBtnText = (_e = resultData.okBtnText) !== null && _e !== void 0 ? _e : getMsg('okBtnText');
+                                    var cancelBtnText = (_f = resultData.cancelBtnText) !== null && _f !== void 0 ? _f : getMsg('cancelBtnText');
+                                    switch (resultData.confirmType) {
                                         case 'dialog':
                                             if (!bootbox || typeof bootbox.dialog !== 'function') {
                                                 console.warn('bootbox.dialog is not installed (is not a function)');
                                                 break;
                                             }
                                             var html = '';
-                                            if (result.responseType == 'text') {
+                                            if (resultData.responseType == 'text') {
                                                 html = result.toastr.message +
                                                     '<input style="margin-top: 10px;" type="text" ' +
                                                     'class="form-control" id="server-confirm-input" />';
@@ -768,13 +770,13 @@ var Query = /** @class */ (function () {
                                                     success: {
                                                         label: okBtnText,
                                                         callback: function () {
-                                                            if (result.responseType === 'text') {
+                                                            if (resultData.responseType === 'text') {
                                                                 item.request.params.confirm = $('#server-confirm-input').val();
                                                             }
-                                                            else if (result.responseType === 'custom') {
+                                                            else if (resultData.responseType === 'custom') {
                                                                 var resObj_1 = {};
                                                                 bbd1_1
-                                                                    .find(result.inputsClass ? '.' + result.inputsClass : '.server-confirm-input')
+                                                                    .find(resultData.inputsClass ? '.' + resultData.inputsClass : '.server-confirm-input')
                                                                     .each(function (index) {
                                                                     switch ($(this).attr('type')) {
                                                                         case 'checkbox':
@@ -863,17 +865,17 @@ var Query = /** @class */ (function () {
                                     _this.socketQuery_stack.removeItem(callback_id);
                                     return false;
                                 }
-                                if (result.system_download_now) {
+                                if (resultData.system_download_now) {
                                     if (!document) {
                                         console.warn("document not available");
                                     }
                                     else {
                                         var linkName = 'my_download_link' + Date.now() + '_' + Math.random();
-                                        var nameRu = result.name_ru || result.filename;
+                                        var nameRu = resultData.name_ru || resultData.filename;
                                         var body_ = document.getElementsByTagName('body')[0];
                                         var a = document.createElement('a');
                                         a.setAttribute('id', linkName);
-                                        a.setAttribute('href', result.path + result.filename);
+                                        a.setAttribute('href', resultData.path + resultData.filename);
                                         a.setAttribute('download', nameRu);
                                         a.setAttribute('style', "display:none;");
                                         body_.appendChild(a);
@@ -1111,7 +1113,6 @@ var Query = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        // if (obj?.isNotApi202205) alert('asas')
                         if (typeof cb === 'function') {
                             return [2 /*return*/, tryDo.call(this, obj, function (err, res) {
                                     try {
