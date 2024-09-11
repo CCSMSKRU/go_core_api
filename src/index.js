@@ -809,7 +809,7 @@ var Query = /** @class */ (function () {
                                             break;
                                         default:
                                             if (!toastr || typeof toastr[result.toastr.type] !== 'function') {
-                                                console.warn("toastr not available or unknown type of toastr: ".concat(result.toastr.type));
+                                                console.warn("toastr is not available or unknown type of toastr: ".concat(result.toastr.type));
                                                 break;
                                             }
                                             if (!document) {
@@ -823,7 +823,8 @@ var Query = /** @class */ (function () {
                                                 getMsg('okBtnTextDefault') +
                                                 '</button> <button id="cancel_socket_query_' +
                                                 btnGuid + '" type="button" class="btn clear">' +
-                                                getMsg('cancelBtnText') + +'</button></div>', '', {
+                                                getMsg('cancelBtnText') +
+                                                '</button></div>', '', {
                                                 "closeButton": false,
                                                 "debug": false,
                                                 "newestOnTop": false,

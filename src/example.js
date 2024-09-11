@@ -1,9 +1,9 @@
 // const initQuery = require('@/index')
-import initQuery from './index.js'
+import initGoCoreQuery from '@/index'
 
 const params = {
     host: '127.0.0.1',
-    port: 9001,
+    port: 8080,
     path:'',
     https: false,
     autoAuth:false,
@@ -23,7 +23,9 @@ const params = {
     }
 }
 
-const query = initQuery(params)
+const goCoreQueryObj = initGoCoreQuery(params)
+const query = goCoreQueryObj.api
+window.api = query
 
 async function init() {
 

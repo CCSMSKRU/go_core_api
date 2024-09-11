@@ -706,6 +706,7 @@ class Query {
 
 
                 if (result.code === 10) {
+
                     // SERVER EXAMPLE
                     //var confirm = obj.confirm;
                     //if (!confirm){
@@ -804,7 +805,7 @@ class Query {
 
                         default :
                             if (!toastr || typeof toastr[result.toastr.type] !== 'function') {
-                                console.warn(`toastr not available or unknown type of toastr: ${result.toastr.type}`)
+                                console.warn(`toastr is not available or unknown type of toastr: ${result.toastr.type}`)
                                 break
                             }
 
@@ -821,7 +822,7 @@ class Query {
                                 getMsg('okBtnTextDefault') +
                                 '</button> <button id="cancel_socket_query_' +
                                 btnGuid + '" type="button" class="btn clear">' +
-                                getMsg('cancelBtnText') + +
+                                getMsg('cancelBtnText') +
                                 '</button></div>', '', {
                                 "closeButton": false,
                                 "debug": false,
