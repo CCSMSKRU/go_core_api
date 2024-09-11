@@ -48,6 +48,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var socket_io_client_1 = require("socket.io-client");
+var lang_1 = require("./lang");
+function getMsg(msgAlias, lang) {
+    return (0, lang_1.getMsg)(msgAlias, lang || (this === null || this === void 0 ? void 0 : this.lang));
+}
 var WS_NOT_CONNECTED = 'WS_NOT_CONNECTED';
 var WS_CONNECTED = 'WS_CONNECTED';
 var WS_CONNECTING = 'WS_CONNECTING';
@@ -104,18 +108,18 @@ function tryDo(obj, cb) {
     // Отклоняем все запросы. Позже эта ошибка будет сброшена
     if (this.status === ERROR) {
         if (this.debugFull)
-            console.log('Ошибка сервера. Завершим', this.response);
+            console.log('Server error. Finish', this.response);
         return cb(null, this.auth_response);
     }
     if (this.status === AUTH_ERROR) {
         if (this.debugFull)
-            console.log('Ошибка авторизации. Завершим', this.auth_response);
+            console.log('Error in auth process. Finish', this.auth_response);
         return cb(null, this.auth_response);
     }
     // Запускаем авторизацию и вызываем запрос заново (он попадет в цикл ожидание пока авторизация не пройдет)
     if (this.status === NO_AUTH) {
         if (this.debugFull)
-            console.log('Еще не авторизованы. Запустим процесс и вызовем запрос снова', { obj: obj, res: this.response });
+            console.log('Not authorized yet. Start process and call request again', { obj: obj, res: this.response });
         this.auth();
         if (!this.autoAuth)
             return cb(null, this.response);
@@ -124,7 +128,7 @@ function tryDo(obj, cb) {
     // Производится авторизация, немного ждем и вызываем заново. Таким образом рано или поздно статус изменется
     if (this.status === IN_AUTH) {
         if (this.debugFull)
-            console.log('Еще производится авторизация, ждем', { res: this.response });
+            console.log('Still in auth process. Wait', { res: this.response });
         setTimeout(function () {
             if (!_this.autoAuth) {
                 _this.status = NO_AUTH;
@@ -136,7 +140,7 @@ function tryDo(obj, cb) {
     }
     if (this.status === READY) {
         if (this.debugFull)
-            console.log('Выполним запрос');
+            console.log('Status READY. Run query.', obj);
         var res_1;
         var counter_1 = 0;
         var q_1 = function () { return __awaiter(_this, void 0, void 0, function () {
@@ -212,7 +216,7 @@ function tryDo(obj, cb) {
                         return [2 /*return*/, cb(null, {
                                 code: 500,
                                 e: e_1,
-                                message: 'Сервер не доступен'
+                                message: 'Server is not available'
                             })];
                     case 5: return [3 /*break*/, 6];
                     case 6: return [2 /*return*/];
@@ -222,7 +226,7 @@ function tryDo(obj, cb) {
         q_1();
     }
     else {
-        return cb(new Error("\u041D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u0439 \u0441\u0442\u0430\u0442\u0443\u0441: ".concat(this.status)));
+        return cb(new Error("Unknown status: ".concat(this.status)));
     }
 }
 var isWindow = (typeof window === 'object' && window);
@@ -238,6 +242,8 @@ var Query = /** @class */ (function () {
         var _this = this;
         if (!params)
             params = {};
+        this.lang = params.lang || 'en';
+        getMsg.bind(this);
         this.https = typeof params.https !== 'undefined' ? params.https : true;
         this.host = (params.host || '').replace(/\/$/, '');
         var defaultPort = this.https ? 443 : 80;
@@ -481,8 +487,9 @@ var Query = /** @class */ (function () {
             console.log(obj);
             console.groupEnd();
             if (!this.doNotDeleteCollapseDataParam && obj.params && typeof obj.params.collapseData !== 'undefined') {
-                console.warn('%c ' + alias + 'С клиента нельзя передовать параметр collapseData. Необходимо исправить метод так, чтобы он не использовал его. ' +
-                    '\nПараметр collapseData удален и передан не будет!', 'background: #ffa482; color: #000');
+                console.warn('%c ' + alias + 'The client cannot pass the collapseData parameter. ' +
+                    'You need to fix the method so that it does not use it. ' +
+                    '\nThe collapseData parameter has been deleted and will not be passed!', 'background: #ffa482; color: #000');
                 delete obj.params.collapseData;
             }
         }
@@ -613,7 +620,7 @@ var Query = /** @class */ (function () {
                         }); });
                         // queryCallback
                         this.socket.on('socketQueryCallback', function (callback_id, result, request_time) {
-                            var _a, _b, _c;
+                            var _a, _b, _c, _d, _e, _f;
                             var item = _this.socketQuery_stack.getItem(callback_id);
                             if (typeof item !== "object")
                                 return;
@@ -624,7 +631,7 @@ var Query = /** @class */ (function () {
                             }
                             if (typeof result === 'object' && result !== null) {
                                 if (typeof result.code === 'undefined') {
-                                    console.log("%c ".concat(alias, "\u0421\u0435\u0440\u0432\u0435\u0440\u043D\u0430\u044F \u0444\u0443\u043D\u043A\u0446\u0438\u044F \u0434\u043E\u043B\u0436\u043D\u0430 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u0442\u044C \"code\". \n                        \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u0441\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u044B\u0439 \u043E\u0442\u0432\u0435\u0442, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440, cb(null, new UserOk('noToastr',{data});"), 'background: #ffd582; color: #000');
+                                    console.log("%c ".concat(alias, "The server function must return \"code\". \n                        Use the standard response, for example: \nreturn new UserOk('noToastr',{data})"), 'background: #ffd582; color: #000');
                                 }
                                 if (!result.toastr) {
                                     result.toastr = {
@@ -656,7 +663,7 @@ var Query = /** @class */ (function () {
                                         toastr[t.type](firstUserErrMsg || t.message, t.title);
                                     }
                                     if (typeof toastr == "object" && t && t.additionalMessage && typeof toastr['error'] === 'function') {
-                                        toastr['error'](t.additionalMessage, 'ВНИМАНИЕ!');
+                                        toastr['error'](t.additionalMessage, 'ATTENTION');
                                     }
                                     // if (result.code === -4) {
                                     //     console.log('НЕ АВТОРИЗОВАН')
@@ -667,7 +674,7 @@ var Query = /** @class */ (function () {
                                 }
                             }
                             else {
-                                console.log("%c \u041E\u0422\u0412\u0415\u0422 \u0414\u041E\u041B\u0416\u0415\u041D \u0411\u042B\u0422\u042C \u041E\u0411\u042A\u0415\u041A\u0422\u041E\u041C \u0418 \u041D\u0415 null. \n                \u0418\u0441\u043F\u043E\u043B\u044C\u0437\u0443\u0439\u0442\u0435 \u0441\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u044B\u0439 \u043E\u0442\u0432\u0435\u0442, \u043D\u0430\u043F\u0440\u0438\u043C\u0435\u0440, \n                cb(null, new UserOk('noToastr',{data:data});", 'background: #F00; color: #fff');
+                                console.log("%c THE ANSWER MUST BE AN OBJECT AND NOT null.\n                Use the standard response, for example,      \n                return new UserOk('noToastr',{data});", 'background: #F00; color: #fff');
                                 console.log('RESULT:', result);
                             }
                             if (typeof item.callback === "function") {
@@ -713,8 +720,8 @@ var Query = /** @class */ (function () {
                                         code: -888,
                                         toastr: {
                                             type: 'error',
-                                            title: 'Ошибка',
-                                            message: 'В ответ пришел null или ответ не является объектом'
+                                            title: 'Error',
+                                            message: 'The response is null or not an object'
                                         },
                                         results: [primal_res]
                                     };
@@ -723,11 +730,11 @@ var Query = /** @class */ (function () {
                                     // SERVER EXAMPLE
                                     //var confirm = obj.confirm;
                                     //if (!confirm){
-                                    //    return cb(new UserError('needConfirm', {message: 'Это тестовый confirm. Напишите "ВАСЯ"',title:'Подтвердите действие', confirmType:'dialog',responseType:'text'}));
+                                    //    return new UserError('needConfirm', {message: 'Это тестовый confirm. Напишите "ВАСЯ"',title:'Подтвердите действие', confirmType:'dialog',responseType:'text'});
                                     //}else if (confirm!='ВАСЯ'){
-                                    //    return cb(null, new UserOk('Не верно вверено контрольное значение. Запрос отклонен.',{type:'info'}));
+                                    //    return new UserOk('Не верно вверено контрольное значение. Запрос отклонен.',{type:'info'})
                                     //}
-                                    //return cb(null, new UserOk('Все ок'));
+                                    //return new UserOk('Все ок')
                                     // END SERVER EXAMPLE
                                     // Если не браузер, росто передадим дальше
                                     if (_this.env !== 'browser') {
@@ -736,9 +743,9 @@ var Query = /** @class */ (function () {
                                         return false;
                                     }
                                     item.request.params.confirmKey = result.confirmKey || result.key;
-                                    var cancelMsg = result.cancelMsg || 'Операция отменена';
-                                    var okBtnText = result.okBtnText || 'Подтвердить';
-                                    var cancelBtnText = result.cancelBtnText || 'Отменить';
+                                    var cancelMsg = (_d = result.cancelMsg) !== null && _d !== void 0 ? _d : getMsg('cancelMsg');
+                                    var okBtnText = (_e = result.okBtnText) !== null && _e !== void 0 ? _e : getMsg('okBtnText');
+                                    var cancelBtnText = (_f = result.cancelBtnText) !== null && _f !== void 0 ? _f : getMsg('cancelBtnText');
                                     switch (result.confirmType) {
                                         case 'dialog':
                                             if (!bootbox || typeof bootbox.dialog !== 'function') {
@@ -747,7 +754,9 @@ var Query = /** @class */ (function () {
                                             }
                                             var html = '';
                                             if (result.responseType == 'text') {
-                                                html = result.toastr.message + '<input style="margin-top: 10px;" type="text" class="form-control" id="server-confirm-input" />';
+                                                html = result.toastr.message +
+                                                    '<input style="margin-top: 10px;" type="text" ' +
+                                                    'class="form-control" id="server-confirm-input" />';
                                             }
                                             else {
                                                 html = result.toastr.message;
@@ -810,8 +819,11 @@ var Query = /** @class */ (function () {
                                             var btnGuid = Date.now() + '_' + Math.random();
                                             toastr[result.toastr.type](result.toastr.message +
                                                 '<div style="width: 100%;"><button id="confirm_socket_query_' + btnGuid +
-                                                '" type="button" class="btn clear">Подтвердить</button> <button id="cancel_socket_query_' +
-                                                btnGuid + '" type="button" class="btn clear">Отмена</button></div>', '', {
+                                                '" type="button" class="btn clear">' +
+                                                getMsg('okBtnTextDefault') +
+                                                '</button> <button id="cancel_socket_query_' +
+                                                btnGuid + '" type="button" class="btn clear">' +
+                                                getMsg('cancelBtnText') + +'</button></div>', '', {
                                                 "closeButton": false,
                                                 "debug": false,
                                                 "newestOnTop": false,

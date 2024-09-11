@@ -1,4 +1,5 @@
 export interface QueryParams {
+    lang?: string
     skipSetTokenOnLogin?: boolean
     loginTokenFieldName?: string
     loginObject?: string

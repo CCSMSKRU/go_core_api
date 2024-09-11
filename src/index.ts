@@ -1,5 +1,10 @@
 import io from 'socket.io-client'
 import {QueryOptions, QueryParams, QueryStack, QueryStorage} from "./models"
+import {getMsg as getMsg_} from "./lang"
+
+function getMsg(msgAlias: string, lang?: string): string {
+    return getMsg_(msgAlias, lang || this?.lang)
+}
 
 
 const WS_NOT_CONNECTED = 'WS_NOT_CONNECTED'
@@ -60,18 +65,18 @@ function tryDo(obj, cb) {
     // Если уже определена ошибка (либо во время авторизации либо во время выполнения запроса), то
     // Отклоняем все запросы. Позже эта ошибка будет сброшена
     if (this.status === ERROR) {
-        if (this.debugFull) console.log('Ошибка сервера. Завершим', this.response)
+        if (this.debugFull) console.log('Server error. Finish', this.response)
         return cb(null, this.auth_response)
     }
 
     if (this.status === AUTH_ERROR) {
-        if (this.debugFull) console.log('Ошибка авторизации. Завершим', this.auth_response)
+        if (this.debugFull) console.log('Error in auth process. Finish', this.auth_response)
         return cb(null, this.auth_response)
     }
 
     // Запускаем авторизацию и вызываем запрос заново (он попадет в цикл ожидание пока авторизация не пройдет)
     if (this.status === NO_AUTH) {
-        if (this.debugFull) console.log('Еще не авторизованы. Запустим процесс и вызовем запрос снова',
+        if (this.debugFull) console.log('Not authorized yet. Start process and call request again',
             {obj, res:this.response})
         this.auth()
         if (!this.autoAuth) return cb(null, this.response)
@@ -80,7 +85,7 @@ function tryDo(obj, cb) {
 
     // Производится авторизация, немного ждем и вызываем заново. Таким образом рано или поздно статус изменется
     if (this.status === IN_AUTH) {
-        if (this.debugFull) console.log('Еще производится авторизация, ждем', {res:this.response})
+        if (this.debugFull) console.log('Still in auth process. Wait', {res:this.response})
         setTimeout(() => {
             if (!this.autoAuth) {
                 this.status = NO_AUTH
@@ -93,7 +98,7 @@ function tryDo(obj, cb) {
 
 
     if (this.status === READY) {
-        if (this.debugFull) console.log('Выполним запрос')
+        if (this.debugFull) console.log('Status READY. Run query.', obj)
         let res
         let counter = 0
 
@@ -154,7 +159,7 @@ function tryDo(obj, cb) {
                     return cb(null, {
                         code: 500,
                         e,
-                        message: 'Сервер не доступен'
+                        message: 'Server is not available'
                     })
 
                 }
@@ -163,7 +168,7 @@ function tryDo(obj, cb) {
 
         q()
     } else {
-        return cb(new Error(`Неизвестный статус: ${this.status}`))
+        return cb(new Error(`Unknown status: ${this.status}`))
     }
 
 }
@@ -180,6 +185,7 @@ let bootbox = isWindow ? globalObj?.bootbox : undefined
 // let $ = window?.$
 
 class Query {
+    lang: string
     https: boolean
     host: string
     port: number
@@ -229,6 +235,10 @@ class Query {
 
     constructor(params?: QueryParams) {
         if (!params) params = {}
+
+        this.lang = params.lang || 'en'
+        getMsg.bind(this)
+
         this.https = typeof params.https !== 'undefined' ? params.https : true
         this.host = (params.host || '').replace(/\/$/, '')
 
@@ -446,8 +456,10 @@ class Query {
             console.log(obj)
             console.groupEnd()
             if (!this.doNotDeleteCollapseDataParam && obj.params && typeof obj.params.collapseData !== 'undefined') {
-                console.warn('%c ' + alias + 'С клиента нельзя передовать параметр collapseData. Необходимо исправить метод так, чтобы он не использовал его. ' +
-                    '\nПараметр collapseData удален и передан не будет!', 'background: #ffa482; color: #000')
+                console.warn('%c ' + alias + 'The client cannot pass the collapseData parameter. ' +
+                    'You need to fix the method so that it does not use it. ' +
+                    '\nThe collapseData parameter has been deleted and will not be passed!',
+                    'background: #ffa482; color: #000')
                 delete obj.params.collapseData
             }
         }
@@ -575,8 +587,8 @@ class Query {
             if (typeof result === 'object' && result !== null) {
                 if (typeof result.code === 'undefined') {
                     console.log(
-                        `%c ${alias}Серверная функция должна возвращать "code". 
-                        Используйте стандартный ответ, например, cb(null, new UserOk('noToastr',{data});`
+                        `%c ${alias}The server function must return "code". 
+                        Use the standard response, for example: \nreturn new UserOk('noToastr',{data})`
                         , 'background: #ffd582; color: #000'
                     )
                 }
@@ -614,7 +626,7 @@ class Query {
                         toastr[t.type](firstUserErrMsg || t.message, t.title)
                     }
                     if (typeof toastr == "object" && t && t.additionalMessage && typeof toastr['error'] === 'function') {
-                        toastr['error'](t.additionalMessage, 'ВНИМАНИЕ!')
+                        toastr['error'](t.additionalMessage, 'ATTENTION')
                     }
 
                     // if (result.code === -4) {
@@ -625,9 +637,9 @@ class Query {
                     // }
                 }
             } else {
-                console.log(`%c ОТВЕТ ДОЛЖЕН БЫТЬ ОБЪЕКТОМ И НЕ null. 
-                Используйте стандартный ответ, например, 
-                cb(null, new UserOk('noToastr',{data:data});`, 'background: #F00; color: #fff')
+                console.log(`%c THE ANSWER MUST BE AN OBJECT AND NOT null.
+                Use the standard response, for example,      
+                return new UserOk('noToastr',{data});`, 'background: #F00; color: #fff')
                 console.log('RESULT:', result)
             }
 
@@ -685,8 +697,8 @@ class Query {
                         code: -888,
                         toastr: {
                             type: 'error',
-                            title: 'Ошибка',
-                            message: 'В ответ пришел null или ответ не является объектом'
+                            title: 'Error',
+                            message: 'The response is null or not an object'
                         },
                         results: [primal_res]
                     }
@@ -697,11 +709,11 @@ class Query {
                     // SERVER EXAMPLE
                     //var confirm = obj.confirm;
                     //if (!confirm){
-                    //    return cb(new UserError('needConfirm', {message: 'Это тестовый confirm. Напишите "ВАСЯ"',title:'Подтвердите действие', confirmType:'dialog',responseType:'text'}));
+                    //    return new UserError('needConfirm', {message: 'Это тестовый confirm. Напишите "ВАСЯ"',title:'Подтвердите действие', confirmType:'dialog',responseType:'text'});
                     //}else if (confirm!='ВАСЯ'){
-                    //    return cb(null, new UserOk('Не верно вверено контрольное значение. Запрос отклонен.',{type:'info'}));
+                    //    return new UserOk('Не верно вверено контрольное значение. Запрос отклонен.',{type:'info'})
                     //}
-                    //return cb(null, new UserOk('Все ок'));
+                    //return new UserOk('Все ок')
                     // END SERVER EXAMPLE
 
                     // Если не браузер, росто передадим дальше
@@ -712,9 +724,9 @@ class Query {
                     }
 
                     item.request.params.confirmKey = result.confirmKey || result.key
-                    var cancelMsg = result.cancelMsg || 'Операция отменена'
-                    var okBtnText = result.okBtnText || 'Подтвердить'
-                    var cancelBtnText = result.cancelBtnText || 'Отменить'
+                    var cancelMsg = result.cancelMsg ?? getMsg('cancelMsg')
+                    var okBtnText = result.okBtnText ?? getMsg('okBtnText')
+                    var cancelBtnText = result.cancelBtnText ?? getMsg('cancelBtnText')
                     switch (result.confirmType) {
 
                         case 'dialog' :
@@ -726,7 +738,9 @@ class Query {
                             var html = ''
 
                             if (result.responseType == 'text') {
-                                html = result.toastr.message + '<input style="margin-top: 10px;" type="text" class="form-control" id="server-confirm-input" />'
+                                html = result.toastr.message +
+                                    '<input style="margin-top: 10px;" type="text" ' +
+                                    'class="form-control" id="server-confirm-input" />'
                             } else {
                                 html = result.toastr.message
                             }
@@ -803,8 +817,12 @@ class Query {
 
                             toastr[result.toastr.type](result.toastr.message +
                                 '<div style="width: 100%;"><button id="confirm_socket_query_' + btnGuid +
-                                '" type="button" class="btn clear">Подтвердить</button> <button id="cancel_socket_query_' +
-                                btnGuid + '" type="button" class="btn clear">Отмена</button></div>', '', {
+                                '" type="button" class="btn clear">' +
+                                getMsg('okBtnTextDefault') +
+                                '</button> <button id="cancel_socket_query_' +
+                                btnGuid + '" type="button" class="btn clear">' +
+                                getMsg('cancelBtnText') + +
+                                '</button></div>', '', {
                                 "closeButton": false,
                                 "debug": false,
                                 "newestOnTop": false,
