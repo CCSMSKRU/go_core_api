@@ -620,7 +620,7 @@ var Query = /** @class */ (function () {
                         }); });
                         // queryCallback
                         this.socket.on('socketQueryCallback', function (callback_id, result, request_time) {
-                            var _a, _b, _c, _d, _e, _f;
+                            var _a, _b, _c, _d, _e, _f, _g, _h, _j;
                             var item = _this.socketQuery_stack.getItem(callback_id);
                             if (typeof item !== "object")
                                 return;
@@ -756,15 +756,15 @@ var Query = /** @class */ (function () {
                                             }
                                             var html = '';
                                             if (resultData.responseType == 'text') {
-                                                html = result.toastr.message +
+                                                html = ((_g = resultData === null || resultData === void 0 ? void 0 : resultData.message) !== null && _g !== void 0 ? _g : result.toastr.message) +
                                                     '<input style="margin-top: 10px;" type="text" ' +
                                                     'class="form-control" id="server-confirm-input" />';
                                             }
                                             else {
-                                                html = result.toastr.message;
+                                                html = ((_h = resultData === null || resultData === void 0 ? void 0 : resultData.message) !== null && _h !== void 0 ? _h : result.toastr.message);
                                             }
                                             var bbd1_1 = bootbox.dialog({
-                                                title: result.toastr.title,
+                                                title: (_j = resultData === null || resultData === void 0 ? void 0 : resultData.title) !== null && _j !== void 0 ? _j : result.toastr.title,
                                                 message: html,
                                                 buttons: {
                                                     success: {

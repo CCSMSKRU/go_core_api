@@ -743,16 +743,16 @@ class Query {
                             var html = ''
 
                             if (resultData.responseType == 'text') {
-                                html = result.toastr.message +
+                                html = (resultData?.message ?? result.toastr.message) +
                                     '<input style="margin-top: 10px;" type="text" ' +
                                     'class="form-control" id="server-confirm-input" />'
                             } else {
-                                html = result.toastr.message
+                                html = (resultData?.message ?? result.toastr.message)
                             }
 
 
                             const bbd1 = bootbox.dialog({
-                                title: result.toastr.title,
+                                title: resultData?.title ?? result.toastr.title,
                                 message: html,
                                 buttons: {
                                     success: {

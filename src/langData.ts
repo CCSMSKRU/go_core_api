@@ -13,7 +13,7 @@ export const langObj: ILangObj = {
         msg: 'Error',
         msg_ru: 'Ошибка'
     },
-    'okBtnTextDefault': {
+    'okBtnText': {
         msg: 'Confirm',
         msg_ru: 'Подтвердить'
     },
@@ -21,7 +21,7 @@ export const langObj: ILangObj = {
         msg: 'Cancel',
         msg_ru: 'Отменить'
     },
-    cancelMsg: {
+    'cancelMsg': {
         msg: 'Operation canceled',
         msg_ru: 'Операция отменена'
     },
