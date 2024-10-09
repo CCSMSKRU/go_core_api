@@ -49,6 +49,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var socket_io_client_1 = require("socket.io-client");
 var lang_1 = require("./lang");
+var uuid_1 = require("uuid");
 function getMsg(msgAlias, lang) {
     return (0, lang_1.getMsg)(msgAlias, lang || (this === null || this === void 0 ? void 0 : this.lang));
 }
@@ -303,6 +304,7 @@ var Query = /** @class */ (function () {
             ? params.browserStorage
             : 'cookie';
         this.tokenStorageKey = params.tokenStorageKey || 'CCSGoCoreToken';
+        this.uuidStorageKey = params.uuidStorageKey || 'goCoreUUID';
         this.skipSetTokenOnLogin = params.skipSetTokenOnLogin;
         this.loginCommand = params.loginCommand || 'login';
         this.loginObject = params.loginObject ? String(params.loginObject).toLowerCase() : 'user';
@@ -387,14 +389,26 @@ var Query = /** @class */ (function () {
     }
     Query.prototype.init = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var _a;
+            var _a, uuid;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         _a = this;
-                        return [4 /*yield*/, this.storage.get(this.tokenStorageKey)];
+                        return [4 /*yield*/, this.storage.get(this.tokenStorageKey)
+                            // Сохраним uuid если его еще нет
+                        ];
                     case 1:
                         _a.token = _b.sent();
+                        return [4 /*yield*/, this.storage.get(this.uuidStorageKey)];
+                    case 2:
+                        uuid = _b.sent();
+                        if (!!uuid) return [3 /*break*/, 4];
+                        uuid = (0, uuid_1.v4)();
+                        return [4 /*yield*/, this.storage.set(this.uuidStorageKey, uuid)];
+                    case 3:
+                        _b.sent();
+                        _b.label = 4;
+                    case 4:
                         if (this.debugFull)
                             console.log('IN init(): TOKEN==>', this.token);
                         if (!this.useAJAX) {

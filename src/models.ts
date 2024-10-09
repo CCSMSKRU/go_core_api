@@ -1,4 +1,5 @@
 export interface QueryParams {
+    uuidStorageKey?: string
     lang?: string
     skipSetTokenOnLogin?: boolean
     loginTokenFieldName?: string

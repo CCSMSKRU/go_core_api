@@ -1,6 +1,7 @@
 import io from 'socket.io-client'
 import {QueryOptions, QueryParams, QueryStack, QueryStorage} from "./models"
 import {getMsg as getMsg_} from "./lang"
+import {v4 as uuidv4} from 'uuid'
 
 function getMsg(msgAlias: string, lang?: string): string {
     return getMsg_(msgAlias, lang || this?.lang)
@@ -209,6 +210,7 @@ class Query {
     storeSetFn: any
     browserStorage: string
     tokenStorageKey: string
+    uuidStorageKey: string
     storage: QueryStorage
     ws_status: string
     auth_response: any | null
@@ -311,6 +313,7 @@ class Query {
             : 'cookie'
 
         this.tokenStorageKey = params.tokenStorageKey || 'CCSGoCoreToken'
+        this.uuidStorageKey = params.uuidStorageKey || 'goCoreUUID'
 
         this.skipSetTokenOnLogin = params.skipSetTokenOnLogin
         this.loginCommand = params.loginCommand || 'login'
@@ -382,6 +385,14 @@ class Query {
 
     async init() {
         this.token = await this.storage.get(this.tokenStorageKey)
+
+        // Сохраним uuid если его еще нет
+        let uuid = await this.storage.get(this.uuidStorageKey)
+        if (!uuid) {
+            uuid = uuidv4()
+            await this.storage.set(this.uuidStorageKey, uuid)
+        }
+
 
         if (this.debugFull) console.log('IN init(): TOKEN==>', this.token)
 
