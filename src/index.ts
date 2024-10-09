@@ -1,4 +1,4 @@
-import io from 'socket.io-client'
+import { io } from "socket.io-client";
 import {QueryOptions, QueryParams, QueryStack, QueryStorage} from "./models"
 import {getMsg as getMsg_} from "./lang"
 import {v4 as uuidv4} from 'uuid'

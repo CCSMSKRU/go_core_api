@@ -555,8 +555,8 @@ var Query = /** @class */ (function () {
                         if (this.debugFull)
                             console.log('connectSocket', this.connectHost, options);
                         this.socket = this.connectHost
-                            ? (0, socket_io_client_1.default)(this.connectHost, options)
-                            : (0, socket_io_client_1.default)(options);
+                            ? (0, socket_io_client_1.io)(this.connectHost, options)
+                            : (0, socket_io_client_1.io)(options);
                         // ========= SET WS Handlers =======================
                         this.socket.on("connect", function () { return __awaiter(_this, void 0, void 0, function () {
                             var _a;
