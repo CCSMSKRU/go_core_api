@@ -1,4 +1,12 @@
 export interface QueryParams {
+    useUUIDIgnoreAgreeStorageKey?: string
+    useUUIDAskAgreeFn?: (cb: (result: boolean) => void) => void;
+    /**
+     * Overridden from cookie by useUUIDIgnoreAgreeStorageKey
+     */
+    useUUIDIgnoreAgree?: boolean
+    uuidAgreeStorageKey?: string
+    useUUID?: boolean
     uuidStorageKey?: string
     lang?: string
     skipSetTokenOnLogin?: boolean
@@ -44,6 +52,7 @@ export interface QueryOptions {
         type?: string; // deprecated
         device_type: string;
         device_info: any;
+        uuid?: string;
     };
 
     auth?: {

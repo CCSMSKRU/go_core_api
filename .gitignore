@@ -2,3 +2,5 @@
 node_modules
 src/SYNC
 package-lock.json
+/TEMP/
+/TMP/

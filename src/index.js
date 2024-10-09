@@ -98,10 +98,13 @@ var uncollapseData = function (obj) {
     return res;
 };
 var getCookie = function (name) {
-    return document.cookie.split('; ').reduce(function (r, v) {
+    var val = document.cookie.split('; ').reduce(function (r, v) {
         var parts = v.split('=');
         return parts[0] === name ? decodeURIComponent(parts[1]) : r;
     }, '');
+    if (val === 'undefined' || val === 'null')
+        return null;
+    return val;
 };
 function tryDo(obj, cb) {
     var _this = this;
@@ -175,7 +178,8 @@ function tryDo(obj, cb) {
                                 : res_1[this.loginTokenFieldName];
                             if (tkn) {
                                 this.token = tkn;
-                                this.socket.auth.token = this.token;
+                                if (this.socket)
+                                    this.socket.auth.token = this.token;
                                 this.storage.set(this.tokenStorageKey, this.token);
                             }
                         }
@@ -243,6 +247,8 @@ var Query = /** @class */ (function () {
         var _this = this;
         if (!params)
             params = {};
+        // Save params (for reInit)
+        this.params = params;
         this.lang = params.lang || 'en';
         getMsg.bind(this);
         this.https = typeof params.https !== 'undefined' ? params.https : true;
@@ -304,7 +310,27 @@ var Query = /** @class */ (function () {
             ? params.browserStorage
             : 'cookie';
         this.tokenStorageKey = params.tokenStorageKey || 'CCSGoCoreToken';
+        /** При использовании uuid и передаче его на сервер, может потребоваться согласие пользователя
+         * на использование такого рода куков. Это зависит от сценариев использования.
+         * Например, для аналитики требуется такое согласие.
+         * */
         this.uuidStorageKey = params.uuidStorageKey || 'goCoreUUID';
+        this.uuidAgreeStorageKey = params.uuidAgreeStorageKey || 'goCoreUUIDAgree';
+        this.useUUIDIgnoreAgreeStorageKey = params.useUUIDIgnoreAgreeStorageKey || 'goCoreUUIDIgnoreAgree';
+        this.useUUID = params.useUUID;
+        this.useUUIDIgnoreAgree = params.useUUIDIgnoreAgree;
+        this.uuid = null;
+        this.useUUIDAskAgreeFn = params.useUUIDAskAgreeFn || (function (cb) {
+            console.error('useUUIDAskAgreeFn is not defined. ' +
+                '\nSignature: (cb: () => boolean) => void.' +
+                '\n\nIf you want to use UUID, you need to define this function or set "useUUIDIgnoreAgree" param to true.' +
+                '\n\nYou can also make an empty function:' +
+                '\n(cb)=>{cb(false)} ' +
+                '\nand request consent later ' +
+                'and call setUUIDAgree function.' +
+                '\nProcess will be continued without UUID');
+            cb(false);
+        });
         this.skipSetTokenOnLogin = params.skipSetTokenOnLogin;
         this.loginCommand = params.loginCommand || 'login';
         this.loginObject = params.loginObject ? String(params.loginObject).toLowerCase() : 'user';
@@ -387,33 +413,215 @@ var Query = /** @class */ (function () {
             console.error('ERROR:GoCoreQuery:init:', e);
         });
     }
-    Query.prototype.init = function () {
+    Query.prototype.setUUID = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, uuid;
+            var uuid, _a, useUUIDIgnoreAgree, set, agree, agree_1;
+            var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
                         _a = this;
-                        return [4 /*yield*/, this.storage.get(this.tokenStorageKey)
-                            // Сохраним uuid если его еще нет
-                        ];
+                        return [4 /*yield*/, this.storage.get(this.uuidAgreeStorageKey)];
                     case 1:
-                        _a.token = _b.sent();
-                        return [4 /*yield*/, this.storage.get(this.uuidStorageKey)];
+                        _a.useUUIDIsAgree = _b.sent();
+                        if (!this.useUUID) return [3 /*break*/, 13];
+                        return [4 /*yield*/, this.storage.get(this.useUUIDIgnoreAgreeStorageKey)];
                     case 2:
-                        uuid = _b.sent();
-                        if (!!uuid) return [3 /*break*/, 4];
-                        uuid = (0, uuid_1.v4)();
-                        return [4 /*yield*/, this.storage.set(this.uuidStorageKey, uuid)];
+                        useUUIDIgnoreAgree = _b.sent();
+                        if (useUUIDIgnoreAgree !== null) {
+                            this.useUUIDIgnoreAgree = useUUIDIgnoreAgree;
+                        }
+                        set = function () { return __awaiter(_this, void 0, void 0, function () {
+                            var ignore;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, this.storage.get(this.uuidStorageKey)];
+                                    case 1:
+                                        uuid = _a.sent();
+                                        if (!!uuid) return [3 /*break*/, 3];
+                                        uuid = (0, uuid_1.v4)();
+                                        return [4 /*yield*/, this.storage.set(this.uuidStorageKey, uuid)];
+                                    case 2:
+                                        _a.sent();
+                                        _a.label = 3;
+                                    case 3:
+                                        this.uuid = uuid;
+                                        return [4 /*yield*/, this.storage.get(this.useUUIDIgnoreAgreeStorageKey)];
+                                    case 4:
+                                        ignore = _a.sent();
+                                        if (!(ignore !== this.useUUIDIgnoreAgree)) return [3 /*break*/, 6];
+                                        return [4 /*yield*/, this.storage.set(this.useUUIDIgnoreAgreeStorageKey, this.useUUIDIgnoreAgree)];
+                                    case 5:
+                                        _a.sent();
+                                        _a.label = 6;
+                                    case 6: return [2 /*return*/];
+                                }
+                            });
+                        }); };
+                        if (!this.useUUIDIgnoreAgree) return [3 /*break*/, 4];
+                        return [4 /*yield*/, set()];
                     case 3:
                         _b.sent();
-                        _b.label = 4;
+                        return [3 /*break*/, 12];
                     case 4:
+                        agree = this.useUUIDIsAgree;
+                        if (agree === false || agree === 'false') {
+                            return [2 /*return*/, null];
+                        }
+                        if (!agree) return [3 /*break*/, 6];
+                        return [4 /*yield*/, set()];
+                    case 5:
+                        _b.sent();
+                        return [3 /*break*/, 12];
+                    case 6:
+                        if (!(typeof this.useUUIDAskAgreeFn !== 'function')) return [3 /*break*/, 7];
+                        console.error('useUUIDAskAgreeFn is not defined. Signature: (cb: () => boolean) => void.' +
+                            '\nIf you want to use UUID, you need to define this function or set "useUUIDIgnoreAgree" param to true.');
+                        console.log('Process will be continued without UUID');
+                        return [3 /*break*/, 12];
+                    case 7: return [4 /*yield*/, new Promise(function (resolve) {
+                            _this.useUUIDAskAgreeFn(function (isAgree) {
+                                resolve(isAgree); // Передаем результат в промис
+                            });
+                        })];
+                    case 8:
+                        agree_1 = _b.sent();
+                        if (!agree_1) return [3 /*break*/, 11];
+                        return [4 /*yield*/, this.storage.set(this.uuidAgreeStorageKey, true)];
+                    case 9:
+                        _b.sent();
+                        return [4 /*yield*/, set()];
+                    case 10:
+                        _b.sent();
+                        return [3 /*break*/, 12];
+                    case 11:
+                        uuid = null;
+                        _b.label = 12;
+                    case 12: return [3 /*break*/, 15];
+                    case 13: return [4 /*yield*/, this.storage.set(this.uuidStorageKey, null)];
+                    case 14:
+                        _b.sent();
+                        _b.label = 15;
+                    case 15: return [2 /*return*/, uuid];
+                }
+            });
+        });
+    };
+    Query.prototype.setUUIDAgree = function (agree_2) {
+        return __awaiter(this, arguments, void 0, function (agree, reInit) {
+            if (reInit === void 0) { reInit = true; }
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (this.debug)
+                            console.log('setUUIDAgree:', { agree: agree, reInit: reInit });
+                        return [4 /*yield*/, this.storage.set(this.uuidAgreeStorageKey, agree)];
+                    case 1:
+                        _a.sent();
+                        if (!reInit) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.reInit()];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Query.prototype.setUUIDIgnoreAgree = function (ignoreAgree_1) {
+        return __awaiter(this, arguments, void 0, function (ignoreAgree, reInit) {
+            if (reInit === void 0) { reInit = true; }
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (this.debug)
+                            console.log('setUUIDIgnoreAgree:', { agree: ignoreAgree, reInit: reInit });
+                        return [4 /*yield*/, this.storage.set(this.useUUIDIgnoreAgreeStorageKey, ignoreAgree)];
+                    case 1:
+                        _a.sent();
+                        if (!reInit) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.reInit()];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Query.prototype.reDefineParams = function (params_1) {
+        return __awaiter(this, arguments, void 0, function (params, reInit) {
+            if (reInit === void 0) { reInit = true; }
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (this.debug)
+                            console.log('reDefineParams: to change:', params);
+                        this.params = __assign(__assign({}, this.params), params);
+                        if (this.debug)
+                            console.log('reDefineParams: complete params:', this.params);
+                        if (!reInit) return [3 /*break*/, 2];
+                        if (this.debug)
+                            console.log('reDefineParams => REINIT');
+                        return [4 /*yield*/, this.reInit()];
+                    case 1:
+                        _a.sent();
+                        _a.label = 2;
+                    case 2: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Query.prototype.init = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _a = this;
+                        return [4 /*yield*/, this.storage.get(this.tokenStorageKey)];
+                    case 1:
+                        _a.token = _b.sent();
                         if (this.debugFull)
-                            console.log('IN init(): TOKEN==>', this.token);
+                            console.log('IN init(): INFO==>', { token: this.token });
                         if (!this.useAJAX) {
                             this.connectSocket();
                         }
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+    Query.prototype.destroy = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, _b, _c;
+            return __generator(this, function (_d) {
+                if (this.socket) {
+                    (_a = this.socket) === null || _a === void 0 ? void 0 : _a.removeAllListeners();
+                    (_b = this.socket) === null || _b === void 0 ? void 0 : _b.disconnect();
+                    (_c = this.socket) === null || _c === void 0 ? void 0 : _c.close();
+                }
+                this.socket = null;
+                return [2 /*return*/];
+            });
+        });
+    };
+    Query.prototype.reInit = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (this.debug)
+                            console.log('REINIT');
+                        return [4 /*yield*/, this.destroy()];
+                    case 1:
+                        _a.sent();
+                        this.constructor(this.params);
+                        return [4 /*yield*/, this.init()];
+                    case 2:
+                        _a.sent();
+                        if (this.debug)
+                            console.log('REINITED');
                         return [2 /*return*/];
                 }
             });
@@ -495,6 +703,7 @@ var Query = /** @class */ (function () {
         });
     };
     Query.prototype.socketQuery = function (obj, cb) {
+        var _a;
         if (this.debug) {
             var alias = ' ➢ ' + obj.object + ' ➢ ' + obj.command + '    ';
             console.groupCollapsed('%c ' + alias, 'background: #35ff4829; color: #000');
@@ -511,7 +720,7 @@ var Query = /** @class */ (function () {
         if (typeof cb === "function") {
             id = this.socketQuery_stack.addItem(cb, obj);
         }
-        this.socket.emit('socketQuery', obj, id);
+        (_a = this.socket) === null || _a === void 0 ? void 0 : _a.emit('socketQuery', obj, id);
     };
     Query.prototype.connectSocket = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -536,13 +745,21 @@ var Query = /** @class */ (function () {
                             query: {
                                 type: 'WEB', // deprecated
                                 device_type: this.device_type,
-                                device_info: this.device_info
+                                device_info: this.device_info,
                             },
                             // withCredentials:true,
                             auth: {
                                 token: this.token
                             }
                         };
+                        if (!this.useUUID) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.setUUID()];
+                    case 3:
+                        _b.sent();
+                        if (this.uuid)
+                            options.query.uuid = this.uuid;
+                        _b.label = 4;
+                    case 4:
                         if (typeof this.extraHeaders !== "undefined") {
                             options.extraHeaders = this.extraHeaders;
                         }
@@ -560,21 +777,23 @@ var Query = /** @class */ (function () {
                         // ========= SET WS Handlers =======================
                         this.socket.on("connect", function () { return __awaiter(_this, void 0, void 0, function () {
                             var _a;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
+                            var _b, _c;
+                            return __generator(this, function (_d) {
+                                switch (_d.label) {
                                     case 0:
                                         _a = this;
                                         return [4 /*yield*/, this.storage.get(this.tokenStorageKey)];
                                     case 1:
-                                        _a.token = _b.sent();
-                                        this.socket.auth.token = this.token;
+                                        _a.token = _d.sent();
+                                        if (this.socket)
+                                            this.socket.auth.token = this.token;
                                         if (this.debug)
                                             console.log('CONNECTED');
                                         this.ws_status = WS_CONNECTED;
                                         if (this.oldSocketId) {
-                                            this.socket.emit('setOldSocketId', this.oldSocketId);
+                                            (_b = this.socket) === null || _b === void 0 ? void 0 : _b.emit('setOldSocketId', this.oldSocketId);
                                         }
-                                        this.oldSocketId = this.socket.id;
+                                        this.oldSocketId = (_c = this.socket) === null || _c === void 0 ? void 0 : _c.id;
                                         return [2 /*return*/];
                                 }
                             });
@@ -588,7 +807,8 @@ var Query = /** @class */ (function () {
                                         return [4 /*yield*/, this.storage.get(this.tokenStorageKey)];
                                     case 1:
                                         _a.token = _b.sent();
-                                        this.socket.auth.token = this.token;
+                                        if (this.socket)
+                                            this.socket.auth.token = this.token;
                                         if (this.debug)
                                             console.log('SOCKET DISCONNECT', reason);
                                         return [2 /*return*/];
@@ -615,7 +835,8 @@ var Query = /** @class */ (function () {
                                             console.log('onToken', new Date(), token);
                                         // console.log('update TOKEN')
                                         this.token = token;
-                                        this.socket.auth.token = this.token;
+                                        if (this.socket)
+                                            this.socket.auth.token = this.token;
                                         return [4 /*yield*/, this.storage.set(this.tokenStorageKey, this.token)
                                             // this.socket.disconnect()
                                             // this.socket.connect()

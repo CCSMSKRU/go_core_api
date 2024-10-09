@@ -1,12 +1,18 @@
 // const initQuery = require('@/index')
 import initGoCoreQuery from '@/index'
+// import initGoCoreQuery from '../dist/indexES5'
 
 const params = {
     host: '127.0.0.1',
-    port: 8080,
+    port: 9001,
     path:'',
     https: false,
     autoAuth:false,
+    useUUID: true,
+    useUUIDAskAgreeFn:()=>{
+        alert('Вы согласны!')
+        return true
+    },
     authFunction:()=>{
         alert('authFunction')
     },
@@ -28,6 +34,12 @@ const query = goCoreQueryObj.api
 window.api = query
 
 async function init() {
+
+    setTimeout(()=>{
+        goCoreQueryObj.instance.reInit()
+    }, 3000)
+
+    return
 
     const o2 = {
         command: 'get_me',
@@ -56,6 +68,8 @@ async function init() {
 
     const res = await query(o2)
     console.log('res===', res)
+
+    x
 
     // const me = await query(o2)
     //

@@ -16,7 +16,8 @@ const filename = ext => isDev
     ? `bundle.${ext}`
     : (buildForES5
             ? `indexES5.${ext}`
-            : `index${target ? `.${target}` : ''}.${ext}`
+            // : `index${target ? `.${target}` : ''}.${ext}`
+            : `index.${ext}`
     )
 
 const jsLoaders = () => {
@@ -63,6 +64,24 @@ const plugins = () => {
     return res
 }
 
+const getExternals = () => {
+    const res = target === 'web'
+        ? undefined
+        : {
+            bufferutil: "bufferutil",
+            "utf-8-validate": "utf-8-validate",
+            crypto: 'commonjs crypto',  // Используйте нативный модуль в Node.js
+            http: 'commonjs http',
+            https: 'commonjs https',
+            stream: 'commonjs stream',
+            net: 'commonjs net',
+            tls: 'commonjs tls',
+            url: 'commonjs url',
+            events: 'commonjs events',
+        }
+
+}
+
 module.exports = {
     context: path.resolve(__dirname, 'src'),
     mode: 'development',
@@ -70,22 +89,13 @@ module.exports = {
     output: {
         filename: filename('js'),
         path: path.resolve(__dirname, 'dist'),
-        library: isDev ? undefined : (buildForES5 ? undefined : 'initGoCoreQuery'),
-        libraryTarget: isDev ? undefined : (buildForES5 ? undefined : 'umd'),
+        // library: isDev ? undefined : (buildForES5 ? undefined : 'initGoCoreQuery'),
+        // libraryTarget: isDev ? undefined : (buildForES5 ? undefined : 'umd'),
+        library: 'initGoCoreQuery',
+        libraryTarget: 'umd',
     },
-    target,  // target может быть 'node' или 'web', в зависимости от сборки
-    externals: isDev || buildForES5 ? undefined : {
-        bufferutil: "bufferutil",
-        "utf-8-validate": "utf-8-validate",
-        crypto: 'commonjs crypto',  // Используйте нативный модуль в Node.js
-        http: 'commonjs http',
-        https: 'commonjs https',
-        stream: 'commonjs stream',
-        net: 'commonjs net',
-        tls: 'commonjs tls',
-        url: 'commonjs url',
-        events: 'commonjs events',
-    },
+    target: target || 'web',  // target может быть 'node' или 'web', в зависимости от сборки
+    externals: getExternals(),
     resolve: {
         extensions: ['.js'],
         alias: {

@@ -55,10 +55,12 @@ const uncollapseData = function (obj) {
 }
 
 const getCookie = (name) => {
-    return document.cookie.split('; ').reduce((r, v) => {
+    const val = document.cookie.split('; ').reduce((r, v) => {
         const parts = v.split('=')
         return parts[0] === name ? decodeURIComponent(parts[1]) : r
     }, '')
+    if (val === 'undefined' || val === 'null') return null
+    return val
 }
 
 function tryDo(obj, cb) {
@@ -128,7 +130,8 @@ function tryDo(obj, cb) {
                         : res[this.loginTokenFieldName]
                     if (tkn) {
                         this.token = tkn
-                        this.socket.auth.token = this.token
+
+                        if (this.socket) this.socket.auth.token = this.token
                         this.storage.set(this.tokenStorageKey, this.token)
                     }
                 }
@@ -211,6 +214,7 @@ class Query {
     browserStorage: string
     tokenStorageKey: string
     uuidStorageKey: string
+    uuidAgreeStorageKey: string
     storage: QueryStorage
     ws_status: string
     auth_response: any | null
@@ -233,9 +237,23 @@ class Query {
     loginObject: string
     loginTokenFieldName: string
     skipSetTokenOnLogin: boolean
+    /** При использовании uuid и передаче его на сервер, может потребоваться согласие пользователя
+     * на использование такого рода куков. Это зависит от сценариев использования.
+     * Например, для аналитики требуется такое согласие.
+     * */
+    useUUID?: boolean
+    uuid?: string
+    private params: QueryParams
+    private useUUIDIgnoreAgree: boolean
+    private useUUIDAskAgreeFn: (cb: (result: boolean) => void) => void;
+    private useUUIDIgnoreAgreeStorageKey?: any
+    private useUUIDIsAgree: string|boolean
 
     constructor(params?: QueryParams) {
         if (!params) params = {}
+
+        // Save params (for reInit)
+        this.params = params
 
         this.lang = params.lang || 'en'
         getMsg.bind(this)
@@ -313,7 +331,29 @@ class Query {
             : 'cookie'
 
         this.tokenStorageKey = params.tokenStorageKey || 'CCSGoCoreToken'
+
+        /** При использовании uuid и передаче его на сервер, может потребоваться согласие пользователя
+         * на использование такого рода куков. Это зависит от сценариев использования.
+         * Например, для аналитики требуется такое согласие.
+         * */
         this.uuidStorageKey = params.uuidStorageKey || 'goCoreUUID'
+        this.uuidAgreeStorageKey = params.uuidAgreeStorageKey || 'goCoreUUIDAgree'
+        this.useUUIDIgnoreAgreeStorageKey = params.useUUIDIgnoreAgreeStorageKey || 'goCoreUUIDIgnoreAgree'
+        this.useUUID = params.useUUID
+        this.useUUIDIgnoreAgree = params.useUUIDIgnoreAgree
+        this.uuid = null
+
+        this.useUUIDAskAgreeFn = params.useUUIDAskAgreeFn || ((cb) => {
+            console.error('useUUIDAskAgreeFn is not defined. ' +
+                '\nSignature: (cb: () => boolean) => void.' +
+                '\n\nIf you want to use UUID, you need to define this function or set "useUUIDIgnoreAgree" param to true.' +
+                '\n\nYou can also make an empty function:' +
+                '\n(cb)=>{cb(false)} ' +
+                '\nand request consent later ' +
+                'and call setUUIDAgree function.' +
+                '\nProcess will be continued without UUID')
+            cb(false)
+        })
 
         this.skipSetTokenOnLogin = params.skipSetTokenOnLogin
         this.loginCommand = params.loginCommand || 'login'
@@ -381,25 +421,135 @@ class Query {
             console.error('ERROR:GoCoreQuery:init:', e)
         })
 
+
+
+    }
+
+    private async setUUID(): Promise<string | null> {
+        let uuid
+
+        this.useUUIDIsAgree = await this.storage.get(this.uuidAgreeStorageKey)
+
+        if (this.useUUID) {
+
+            // загрузим useUUIDIgnoreAgree
+            const useUUIDIgnoreAgree = await this.storage.get(this.useUUIDIgnoreAgreeStorageKey)
+            if (useUUIDIgnoreAgree !== null) {
+                this.useUUIDIgnoreAgree = useUUIDIgnoreAgree
+            }
+
+
+
+            // Сохраним uuid если его еще нет. Но сперва проверим согласие пользователя
+            const set = async ()=>{
+                uuid = await this.storage.get(this.uuidStorageKey)
+                if (!uuid) {
+                    uuid = uuidv4()
+                    await this.storage.set(this.uuidStorageKey, uuid)
+                }
+                this.uuid = uuid
+
+                // save useUUIDIgnoreAgree
+                const ignore = await this.storage.get(this.useUUIDIgnoreAgreeStorageKey)
+                if (ignore !== this.useUUIDIgnoreAgree) {
+                    await this.storage.set(this.useUUIDIgnoreAgreeStorageKey, this.useUUIDIgnoreAgree)
+                }
+
+            }
+
+            if (this.useUUIDIgnoreAgree) {
+                await set()
+            } else {
+                const agree = this.useUUIDIsAgree
+                if (agree === false || agree === 'false') {
+                    return null
+                }
+
+                if (agree) {
+                    await set()
+                } else {
+                    if (typeof this.useUUIDAskAgreeFn !== 'function') {
+                        console.error('useUUIDAskAgreeFn is not defined. Signature: (cb: () => boolean) => void.' +
+                            '\nIf you want to use UUID, you need to define this function or set "useUUIDIgnoreAgree" param to true.')
+                        console.log('Process will be continued without UUID')
+                    } else {
+                        // Вызов с обработкой результата
+                        const agree = await new Promise<boolean>((resolve) => {
+                            this.useUUIDAskAgreeFn((isAgree) => {
+                                resolve(isAgree);  // Передаем результат в промис
+                            });
+                        });
+
+                        if (agree) {
+                            await this.storage.set(this.uuidAgreeStorageKey, true)
+                            await set()
+                        } else {
+                            uuid = null
+                        }
+                    }
+
+                }
+            }
+        } else {
+            await this.storage.set(this.uuidStorageKey, null)
+        }
+        return uuid
+    }
+
+    async setUUIDAgree(agree: boolean, reInit: boolean = true) {
+        if (this.debug) console.log('setUUIDAgree:', {agree, reInit})
+        await this.storage.set(this.uuidAgreeStorageKey, agree)
+        if (reInit) {
+            await this.reInit()
+        }
+    }
+
+    async setUUIDIgnoreAgree(ignoreAgree: boolean|null, reInit: boolean = true) {
+        if (this.debug) console.log('setUUIDIgnoreAgree:', {agree: ignoreAgree, reInit})
+        await this.storage.set(this.useUUIDIgnoreAgreeStorageKey, ignoreAgree)
+        if (reInit) {
+            await this.reInit()
+        }
+    }
+
+
+
+    async reDefineParams(params: QueryParams, reInit: boolean = true) {
+        if (this.debug) console.log('reDefineParams: to change:', params)
+        this.params = {...this.params, ...params}
+        if (this.debug) console.log('reDefineParams: complete params:', this.params)
+            if (reInit) {
+            if (this.debug) console.log('reDefineParams => REINIT')
+            await this.reInit()
+        }
     }
 
     async init() {
         this.token = await this.storage.get(this.tokenStorageKey)
 
-        // Сохраним uuid если его еще нет
-        let uuid = await this.storage.get(this.uuidStorageKey)
-        if (!uuid) {
-            uuid = uuidv4()
-            await this.storage.set(this.uuidStorageKey, uuid)
-        }
-
-
-        if (this.debugFull) console.log('IN init(): TOKEN==>', this.token)
-
+        if (this.debugFull) console.log('IN init(): INFO==>', {token:this.token})
 
         if (!this.useAJAX) {
             this.connectSocket()
         }
+    }
+
+    async destroy() {
+        if (this.socket){
+            this.socket?.removeAllListeners()
+            this.socket?.disconnect()
+            this.socket?.close()
+        }
+        this.socket = null
+        // await new Promise(cb=>setTimeout(cb, 5000))
+    }
+
+    async reInit() {
+        if (this.debug) console.log('REINIT')
+        await this.destroy()
+        this.constructor(this.params)
+        await this.init()
+        if (this.debug) console.log('REINITED')
     }
 
     async query(obj = {}) {
@@ -477,7 +627,7 @@ class Query {
         if (typeof cb === "function") {
             id = this.socketQuery_stack.addItem(cb, obj)
         }
-        this.socket.emit('socketQuery', obj, id)
+        this.socket?.emit('socketQuery', obj, id)
     }
 
     async connectSocket() {
@@ -493,12 +643,16 @@ class Query {
             query: {
                 type: 'WEB', // deprecated
                 device_type: this.device_type,
-                device_info: this.device_info
+                device_info: this.device_info,
             },
             // withCredentials:true,
             auth: {
                 token: this.token
             }
+        }
+        if (this.useUUID) {
+            await this.setUUID()
+            if (this.uuid) options.query.uuid = this.uuid
         }
 
         if (typeof this.extraHeaders !== "undefined") {
@@ -522,15 +676,15 @@ class Query {
 
         this.socket.on("connect", async () => {
             this.token = await this.storage.get(this.tokenStorageKey)
-            this.socket.auth.token = this.token
+            if (this.socket) this.socket.auth.token = this.token
 
             if (this.debug) console.log('CONNECTED')
             this.ws_status = WS_CONNECTED
 
             if (this.oldSocketId) {
-                this.socket.emit('setOldSocketId', this.oldSocketId)
+                this.socket?.emit('setOldSocketId', this.oldSocketId)
             }
-            this.oldSocketId = this.socket.id
+            this.oldSocketId = this.socket?.id
 
             // let oldSockets = await this.storage.get('oldSockets') || []
             // if (!oldSockets.includes(this.socket.id)) oldSockets.push(this.socket.id)
@@ -542,7 +696,7 @@ class Query {
 
         this.socket.on("disconnect", async (reason) => {
             this.token = await this.storage.get(this.tokenStorageKey)
-            this.socket.auth.token = this.token
+            if (this.socket) this.socket.auth.token = this.token
 
             if (this.debug) console.log('SOCKET DISCONNECT', reason)
             // this.ws_status = WS_NOT_CONNECTED
@@ -570,7 +724,7 @@ class Query {
             if (this.debugFull) console.log('onToken', new Date(), token)
             // console.log('update TOKEN')
             this.token = token
-            this.socket.auth.token = this.token
+            if (this.socket) this.socket.auth.token = this.token
             await this.storage.set(this.tokenStorageKey, this.token)
             // this.socket.disconnect()
             // this.socket.connect()
@@ -1097,6 +1251,7 @@ class Query {
 
 export default function init(params = {}): { api: any, instance: any } {
     const query_ = new Query({...params})
+
 
     // const o2 = {
     //     command: 'get_me',
