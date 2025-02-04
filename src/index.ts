@@ -548,8 +548,8 @@ class Query {
         if (this.debug) console.log('REINIT')
         await this.destroy()
         this.constructor(this.params)
-        await this.init()
-        if (this.debug) console.log('REINITED')
+        // await this.init()
+        if (this.debug) console.log('REINITED!')
     }
 
     async query(obj = {}) {
@@ -964,6 +964,8 @@ class Query {
                                     }
                                 }
                             })
+                            
+                            bbd1.find('modal-dialog')?.addClass('server-confirm-dialog')
 
 
                             break

@@ -617,11 +617,9 @@ var Query = /** @class */ (function () {
                     case 1:
                         _a.sent();
                         this.constructor(this.params);
-                        return [4 /*yield*/, this.init()];
-                    case 2:
-                        _a.sent();
+                        // await this.init()
                         if (this.debug)
-                            console.log('REINITED');
+                            console.log('REINITED!');
                         return [2 /*return*/];
                 }
             });
@@ -855,7 +853,7 @@ var Query = /** @class */ (function () {
                         }); });
                         // queryCallback
                         this.socket.on('socketQueryCallback', function (callback_id, result, request_time) {
-                            var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+                            var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
                             var item = _this.socketQuery_stack.getItem(callback_id);
                             if (typeof item !== "object")
                                 return;
@@ -1041,6 +1039,7 @@ var Query = /** @class */ (function () {
                                                     }
                                                 }
                                             });
+                                            (_k = bbd1_1.find('modal-dialog')) === null || _k === void 0 ? void 0 : _k.addClass('server-confirm-dialog');
                                             break;
                                         case 'date':
                                             break;
