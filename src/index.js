@@ -722,7 +722,7 @@ var Query = /** @class */ (function () {
     };
     Query.prototype.connectSocket = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, options;
+            var _a, timeZoneOffset, options;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -738,12 +738,14 @@ var Query = /** @class */ (function () {
                         _a.token = _b.sent();
                         _b.label = 2;
                     case 2:
+                        timeZoneOffset = new Date().getTimezoneOffset();
                         options = {
                             path: this.url.replace(/\/$/, ''),
                             query: {
                                 type: 'WEB', // deprecated
                                 device_type: this.device_type,
                                 device_info: this.device_info,
+                                timeZoneOffset: timeZoneOffset
                             },
                             // withCredentials:true,
                             auth: {

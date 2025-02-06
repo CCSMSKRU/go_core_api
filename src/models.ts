@@ -53,6 +53,7 @@ export interface QueryOptions {
         device_type: string;
         device_info: any;
         uuid?: string;
+        timeZoneOffset?: number;
     };
 
     auth?: {

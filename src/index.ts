@@ -638,12 +638,15 @@ class Query {
 
         if (!this.token) this.token = await this.storage.get(this.tokenStorageKey)
 
+        const timeZoneOffset = new Date().getTimezoneOffset();
+
         const options: QueryOptions = {
             path: this.url.replace(/\/$/, ''),
             query: {
                 type: 'WEB', // deprecated
                 device_type: this.device_type,
                 device_info: this.device_info,
+                timeZoneOffset
             },
             // withCredentials:true,
             auth: {
