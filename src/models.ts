@@ -1,18 +1,19 @@
 export interface QueryParams {
-    useUUIDIgnoreAgreeStorageKey?: string
+    token: string;
+    useUUIDIgnoreAgreeStorageKey?: string;
     useUUIDAskAgreeFn?: (cb: (result: boolean) => void) => void;
     /**
      * Overridden from cookie by useUUIDIgnoreAgreeStorageKey
      */
-    useUUIDIgnoreAgree?: boolean
-    uuidAgreeStorageKey?: string
-    useUUID?: boolean
-    uuidStorageKey?: string
-    lang?: string
-    skipSetTokenOnLogin?: boolean
-    loginTokenFieldName?: string
-    loginObject?: string
-    loginCommand?: string
+    useUUIDIgnoreAgree?: boolean;
+    uuidAgreeStorageKey?: string;
+    useUUID?: boolean;
+    uuidStorageKey?: string;
+    lang?: string;
+    skipSetTokenOnLogin?: boolean;
+    loginTokenFieldName?: string;
+    loginObject?: string;
+    loginCommand?: string;
     https?: boolean;
     host?: string;
     port?: number | string;
@@ -55,19 +56,16 @@ export interface QueryOptions {
         uuid?: string;
         timeZoneOffset?: number;
     };
-
     auth?: {
         token: string;
     };
-
     withCredentials?: boolean;
-    extraHeaders?: any
-    transports?:any
+    extraHeaders?: any;
+    transports?: any;
 }
 
 export interface QueryStorage {
     get(key: string): Promise<any>;
-
     set(key: string, val: any): Promise<void>;
 }
 
@@ -79,11 +77,7 @@ export interface QueryItem {
 
 export interface QueryStack {
     items: Record<string, QueryItem>;
-
     getItem(id: string): QueryItem | undefined;
-
     addItem(cb: Function, obj: any): string;
-
     removeItem(id: string): void;
 }
-

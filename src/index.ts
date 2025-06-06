@@ -314,6 +314,7 @@ class Query {
 
         this.env = params.env || 'browser'
 
+        this.token = params.token
         this.autoAuth = typeof params.autoAuth !== "undefined" ? params.autoAuth : false
         // Можно передать и тогда она будет вызываться если надо авторизоваться, при условии что autoAuth = false
         this.authFunction = params.authFunction || params.authFn
@@ -525,7 +526,7 @@ class Query {
     }
 
     async init() {
-        this.token = await this.storage.get(this.tokenStorageKey)
+        this.token = this.token || await this.storage.get(this.tokenStorageKey)
 
         if (this.debugFull) console.log('IN init(): INFO==>', {token:this.token})
 
@@ -1278,6 +1279,8 @@ export default function init(params = {}): { api: any, instance: any } {
     // console.log('query_.do==>', typeof query_.do)
     return {api: query_.do.bind(query_), instance: query_}
 }
+
+export const initGoCoreQuery = init
 
 // @ts-ignore
 globalObj?.initGoCoreQuery = init

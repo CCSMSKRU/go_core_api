@@ -20,8 +20,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -47,6 +47,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.initGoCoreQuery = void 0;
+exports.default = init;
 var socket_io_client_1 = require("socket.io-client");
 var lang_1 = require("./lang");
 var uuid_1 = require("uuid");
@@ -296,6 +298,7 @@ var Query = /** @class */ (function () {
             }
         };
         this.env = params.env || 'browser';
+        this.token = params.token;
         this.autoAuth = typeof params.autoAuth !== "undefined" ? params.autoAuth : false;
         // Можно передать и тогда она будет вызываться если надо авторизоваться, при условии что autoAuth = false
         this.authFunction = params.authFunction || params.authFn;
@@ -574,14 +577,19 @@ var Query = /** @class */ (function () {
     };
     Query.prototype.init = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var _a, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         _a = this;
+                        _b = this.token;
+                        if (_b) return [3 /*break*/, 2];
                         return [4 /*yield*/, this.storage.get(this.tokenStorageKey)];
                     case 1:
-                        _a.token = _b.sent();
+                        _b = (_c.sent());
+                        _c.label = 2;
+                    case 2:
+                        _a.token = _b;
                         if (this.debugFull)
                             console.log('IN init(): INFO==>', { token: this.token });
                         if (!this.useAJAX) {
@@ -1395,6 +1403,6 @@ function init(params) {
     // console.log('query_.do==>', typeof query_.do)
     return { api: query_.do.bind(query_), instance: query_ };
 }
-exports.default = init;
+exports.initGoCoreQuery = init;
 // @ts-ignore
 globalObj === null || globalObj === void 0 ? void 0 : globalObj.initGoCoreQuery = init;

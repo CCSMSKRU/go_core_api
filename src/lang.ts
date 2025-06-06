@@ -11,12 +11,12 @@ import {langObj} from "./langData"
 export interface ILangObj {
     [msgAlias: string]: {
         msg: string;
-        msg_ru?: string
-        [msg_lang: string]: string
-    }
+        msg_ru?: string;
+        [msg_lang: string]: string;
+    };
 }
 
-export const getMsg = (msgAlias: string, lang: string = 'en'): string => {
-    if (!langObj[msgAlias]) return msgAlias
-    return langObj[msgAlias][`msg_${lang}`] ?? langObj[msgAlias][`msg`] ?? msgAlias
-}
+export const getMsg = (msgAlias: string, lang: string = "en"): string => {
+    if (!langObj[msgAlias]) return msgAlias;
+    return langObj[msgAlias][`msg_${lang}`] ?? langObj[msgAlias].msg ?? msgAlias;
+};
