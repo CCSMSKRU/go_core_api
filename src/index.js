@@ -360,7 +360,7 @@ var Query = /** @class */ (function () {
                                     console.warn('Unknown type of browserStorage. Available:', availableBrowserStorages.join(','));
                                 }
                             }
-                            return [2 /*return*/];
+                            return [2 /*return*/, null];
                     }
                 });
             }); },
@@ -1238,12 +1238,18 @@ var Query = /** @class */ (function () {
     };
     Query.prototype.auth = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var o, counter, tryQ;
+            var now, o, counter, tryQ;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        now = Date.now();
+                        if (this.status === IN_AUTH && now - this.inAuthStarted < 10000) {
+                            if (this.debugFull)
+                                console.log('Already in progress', { diff: now - this.inAuthStarted, inAuthStarted: this.inAuthStarted });
+                        }
                         this.status = IN_AUTH;
+                        this.inAuthStarted = now;
                         if (!this.autoAuth) {
                             if (typeof this.authFunction === 'function') {
                                 this.authFunction({}, function (err) {
@@ -1259,8 +1265,8 @@ var Query = /** @class */ (function () {
                             return [2 /*return*/];
                         }
                         o = {
-                            command: 'login',
-                            object: 'User',
+                            command: this.loginCommand,
+                            object: this.loginObject,
                             params: {
                                 login: this.login,
                                 password: this.password
@@ -1387,20 +1393,6 @@ var Query = /** @class */ (function () {
 function init(params) {
     if (params === void 0) { params = {}; }
     var query_ = new Query(__assign({}, params));
-    // const o2 = {
-    //     command: 'get_me',
-    //     object: 'User',
-    //     params: {}
-    // }
-    // query_.do(o2, (r)=>{
-    //     console.log('r', r)
-    //     debugger;
-    //     throw 'dasd'
-    // })
-    // const me = await query_.do(o2)
-    //
-    // console.log('Me', me)
-    // console.log('query_.do==>', typeof query_.do)
     return { api: query_.do.bind(query_), instance: query_ };
 }
 exports.initGoCoreQuery = init;

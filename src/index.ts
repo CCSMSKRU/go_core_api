@@ -1,4 +1,4 @@
-import { io } from "socket.io-client";
+import {io} from "socket.io-client"
 import {QueryOptions, QueryParams, QueryStack, QueryStorage} from "./models"
 import {getMsg as getMsg_} from "./lang"
 import {v4 as uuidv4} from 'uuid'
@@ -209,7 +209,7 @@ class Query {
     token: string
     login: string
     password: string
-    storeGetFn: any
+    storeGetFn: (key: string) => Promise<string|null>
     storeSetFn: any
     browserStorage: string
     tokenStorageKey: string
@@ -245,12 +245,13 @@ class Query {
     uuid?: string
     private params: QueryParams
     private useUUIDIgnoreAgree: boolean
-    private useUUIDAskAgreeFn: (cb: (result: boolean) => void) => void;
+    private useUUIDAskAgreeFn: (cb: (result: boolean) => void) => void
     private useUUIDIgnoreAgreeStorageKey?: any
-    private useUUIDIsAgree: string|boolean
+    private useUUIDIsAgree: string | boolean
+    private inAuthStarted: number
 
     constructor(params?: QueryParams) {
-        if (!params) params = {}
+        if (!params) params = {} as QueryParams
 
         // Save params (for reInit)
         this.params = params
@@ -375,6 +376,7 @@ class Query {
                         console.warn('Unknown type of browserStorage. Available:', availableBrowserStorages.join(','))
                     }
                 }
+                return null
             },
             set: async (key, val) => {
                 const old = await this.storage.get(key)
@@ -423,7 +425,6 @@ class Query {
         })
 
 
-
     }
 
     private async setUUID(): Promise<string | null> {
@@ -440,9 +441,8 @@ class Query {
             }
 
 
-
             // Сохраним uuid если его еще нет. Но сперва проверим согласие пользователя
-            const set = async ()=>{
+            const set = async () => {
                 uuid = await this.storage.get(this.uuidStorageKey)
                 if (!uuid) {
                     uuid = uuidv4()
@@ -477,9 +477,9 @@ class Query {
                         // Вызов с обработкой результата
                         const agree = await new Promise<boolean>((resolve) => {
                             this.useUUIDAskAgreeFn((isAgree) => {
-                                resolve(isAgree);  // Передаем результат в промис
-                            });
-                        });
+                                resolve(isAgree)  // Передаем результат в промис
+                            })
+                        })
 
                         if (agree) {
                             await this.storage.set(this.uuidAgreeStorageKey, true)
@@ -505,7 +505,7 @@ class Query {
         }
     }
 
-    async setUUIDIgnoreAgree(ignoreAgree: boolean|null, reInit: boolean = true) {
+    async setUUIDIgnoreAgree(ignoreAgree: boolean | null, reInit: boolean = true) {
         if (this.debug) console.log('setUUIDIgnoreAgree:', {agree: ignoreAgree, reInit})
         await this.storage.set(this.useUUIDIgnoreAgreeStorageKey, ignoreAgree)
         if (reInit) {
@@ -514,12 +514,11 @@ class Query {
     }
 
 
-
     async reDefineParams(params: QueryParams, reInit: boolean = true) {
         if (this.debug) console.log('reDefineParams: to change:', params)
         this.params = {...this.params, ...params}
         if (this.debug) console.log('reDefineParams: complete params:', this.params)
-            if (reInit) {
+        if (reInit) {
             if (this.debug) console.log('reDefineParams => REINIT')
             await this.reInit()
         }
@@ -528,7 +527,7 @@ class Query {
     async init() {
         this.token = this.token || await this.storage.get(this.tokenStorageKey)
 
-        if (this.debugFull) console.log('IN init(): INFO==>', {token:this.token})
+        if (this.debugFull) console.log('IN init(): INFO==>', {token: this.token})
 
         if (!this.useAJAX) {
             this.connectSocket()
@@ -536,7 +535,7 @@ class Query {
     }
 
     async destroy() {
-        if (this.socket){
+        if (this.socket) {
             this.socket?.removeAllListeners()
             this.socket?.disconnect()
             this.socket?.close()
@@ -639,7 +638,7 @@ class Query {
 
         if (!this.token) this.token = await this.storage.get(this.tokenStorageKey)
 
-        const timeZoneOffset = new Date().getTimezoneOffset();
+        const timeZoneOffset = new Date().getTimezoneOffset()
 
         const options: QueryOptions = {
             path: this.url.replace(/\/$/, ''),
@@ -968,7 +967,7 @@ class Query {
                                     }
                                 }
                             })
-                            
+
                             bbd1.find('modal-dialog')?.addClass('server-confirm-dialog')
 
 
@@ -1152,7 +1151,14 @@ class Query {
 
     async auth() {
 
+        const now = Date.now()
+        if (this.status === IN_AUTH && now - this.inAuthStarted < 10000) {
+            if (this.debugFull) console.log('Already in progress',
+                {diff: now - this.inAuthStarted, inAuthStarted: this.inAuthStarted})
+        }
+
         this.status = IN_AUTH
+        this.inAuthStarted = now
 
         if (!this.autoAuth) {
             if (typeof this.authFunction === 'function') {
@@ -1169,8 +1175,8 @@ class Query {
         }
 
         const o = {
-            command: 'login',
-            object: 'User',
+            command: this.loginCommand,
+            object: this.loginObject,
             params: {
                 login: this.login,
                 password: this.password
@@ -1255,28 +1261,8 @@ class Query {
     }
 }
 
-export default function init(params = {}): { api: any, instance: any } {
+export default function init(params: QueryParams = {} as QueryParams): { api: any, instance: any } {
     const query_ = new Query({...params})
-
-
-    // const o2 = {
-    //     command: 'get_me',
-    //     object: 'User',
-    //     params: {}
-    // }
-
-
-    // query_.do(o2, (r)=>{
-    //     console.log('r', r)
-    //     debugger;
-    //     throw 'dasd'
-    // })
-
-    // const me = await query_.do(o2)
-    //
-    // console.log('Me', me)
-
-    // console.log('query_.do==>', typeof query_.do)
     return {api: query_.do.bind(query_), instance: query_}
 }
 
