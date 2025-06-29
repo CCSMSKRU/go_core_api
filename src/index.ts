@@ -1,4 +1,4 @@
-import {io} from "socket.io-client"
+import {io, Socket} from "socket.io-client"
 import {QueryOptions, QueryParams, QueryStack, QueryStorage} from "./models"
 import {getMsg as getMsg_} from "./lang"
 import {v4 as uuidv4} from 'uuid'
@@ -193,41 +193,41 @@ class Query {
     host: string
     port: number
     url: string
-    useAJAX: any
+    useAJAX: unknown
     connectHost: string | null
-    extraHeaders: any
-    transports: any
-    withCredentials: any
+    extraHeaders: unknown
+    transports: unknown
+    withCredentials: boolean
     device_type: string
-    device_info: any
+    device_info: unknown
     socketQuery_stack: QueryStack
     env: string
     autoAuth: boolean
-    authFunction: any
-    toMainFunction: any
-    afterInitConnect: any
+    authFunction: unknown
+    toMainFunction: unknown
+    afterInitConnect: unknown
     token: string
     login: string
     password: string
     storeGetFn: (key: string) => Promise<string|null>
-    storeSetFn: any
+    storeSetFn: unknown
     browserStorage: string
     tokenStorageKey: string
     uuidStorageKey: string
     uuidAgreeStorageKey: string
     storage: QueryStorage
     ws_status: string
-    auth_response: any | null
+    auth_response: unknown | null
     tryAuthCount: number
     tryAuthPause: number
     tryCount: number
     tryPause: number
-    debug: any
-    debugFull: any
-    doNotDeleteCollapseDataParam: any
+    debug: unknown
+    debugFull: unknown
+    doNotDeleteCollapseDataParam: unknown
     status: string
 
-    socket: any
+    socket: Socket
 
     tryConnectCnt: number
     tryConnectTimeout: number
@@ -246,7 +246,7 @@ class Query {
     private params: QueryParams
     private useUUIDIgnoreAgree: boolean
     private useUUIDAskAgreeFn: (cb: (result: boolean) => void) => void
-    private useUUIDIgnoreAgreeStorageKey?: any
+    private useUUIDIgnoreAgreeStorageKey?: string
     private useUUIDIsAgree: string | boolean
     private inAuthStarted: number
 
@@ -679,7 +679,7 @@ class Query {
 
         this.socket.on("connect", async () => {
             this.token = await this.storage.get(this.tokenStorageKey)
-            if (this.socket) this.socket.auth.token = this.token
+            if (this.socket) (this.socket.auth as { token?: string }).token = this.token
 
             if (this.debug) console.log('CONNECTED')
             this.ws_status = WS_CONNECTED
@@ -699,7 +699,7 @@ class Query {
 
         this.socket.on("disconnect", async (reason) => {
             this.token = await this.storage.get(this.tokenStorageKey)
-            if (this.socket) this.socket.auth.token = this.token
+            if (this.socket) (this.socket.auth as { token?: string }).token = this.token
 
             if (this.debug) console.log('SOCKET DISCONNECT', reason)
             // this.ws_status = WS_NOT_CONNECTED
@@ -727,7 +727,7 @@ class Query {
             if (this.debugFull) console.log('onToken', new Date(), token)
             // console.log('update TOKEN')
             this.token = token
-            if (this.socket) this.socket.auth.token = this.token
+            if (this.socket) (this.socket.auth as { token?: string }).token = this.token
             await this.storage.set(this.tokenStorageKey, this.token)
             // this.socket.disconnect()
             // this.socket.connect()
@@ -1261,7 +1261,7 @@ class Query {
     }
 }
 
-export default function init(params: QueryParams = {} as QueryParams): { api: any, instance: any } {
+export default function init(params: QueryParams = {} as QueryParams): { api: unknown, instance: unknown } {
     const query_ = new Query({...params})
     return {api: query_.do.bind(query_), instance: query_}
 }
