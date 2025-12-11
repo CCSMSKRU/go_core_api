@@ -20,12 +20,12 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
-    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
+    return g.next = verb(0), g["throw"] = verb(1), g["return"] = verb(2), typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
-        while (_) try {
+        while (g && (g = 0, op[0] && (_ = 0)), _) try {
             if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
             if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
@@ -46,7 +46,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = init;
 var socket_io_client_1 = require("socket.io-client");
 var WS_NOT_CONNECTED = 'WS_NOT_CONNECTED';
 var WS_CONNECTED = 'WS_CONNECTED';
@@ -357,7 +358,7 @@ var Query = /** @class */ (function () {
         // Сбросим после успешного подключения
         this.tryConnectCnt = 0;
         this.tryConnectTimeout = 50;
-        this.init().then()["catch"](function (e) {
+        this.init().then().catch(function (e) {
             console.error('ERROR:GoCoreQuery:init:', e);
         });
     }
@@ -381,10 +382,10 @@ var Query = /** @class */ (function () {
             });
         });
     };
-    Query.prototype.query = function (obj) {
-        if (obj === void 0) { obj = {}; }
-        return __awaiter(this, void 0, void 0, function () {
+    Query.prototype.query = function () {
+        return __awaiter(this, arguments, void 0, function (obj) {
             var _a;
+            if (obj === void 0) { obj = {}; }
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -402,10 +403,10 @@ var Query = /** @class */ (function () {
             });
         });
     };
-    Query.prototype.queryAJAX = function (obj) {
-        if (obj === void 0) { obj = {}; }
-        return __awaiter(this, void 0, void 0, function () {
+    Query.prototype.queryAJAX = function () {
+        return __awaiter(this, arguments, void 0, function (obj) {
             var httpS, data, options;
+            if (obj === void 0) { obj = {}; }
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -495,7 +496,7 @@ var Query = /** @class */ (function () {
                         options = {
                             path: this.url.replace(/\/$/, ''),
                             query: {
-                                type: 'WEB',
+                                type: 'WEB', // deprecated
                                 device_type: this.device_type,
                                 device_info: this.device_info
                             },
@@ -516,8 +517,8 @@ var Query = /** @class */ (function () {
                         if (this.debugFull)
                             console.log('connectSocket', this.connectHost, options);
                         this.socket = this.connectHost
-                            ? (0, socket_io_client_1["default"])(this.connectHost, options)
-                            : (0, socket_io_client_1["default"])(options);
+                            ? (0, socket_io_client_1.default)(this.connectHost, options)
+                            : (0, socket_io_client_1.default)(options);
                         // ========= SET WS Handlers =======================
                         this.socket.on("connect", function () { return __awaiter(_this, void 0, void 0, function () {
                             var _a;
@@ -763,7 +764,7 @@ var Query = /** @class */ (function () {
                                                             else {
                                                                 item.request.params.confirm = true;
                                                             }
-                                                            _this["do"](item.request, item.callback);
+                                                            _this.do(item.request, item.callback);
                                                         }
                                                     },
                                                     error: {
@@ -772,10 +773,12 @@ var Query = /** @class */ (function () {
                                                             if (toastr && typeof toastr['info'] === 'function') {
                                                                 toastr['info'](cancelMsg);
                                                             }
-                                                            item.callback(result);
+                                                            // item.callback(result)
                                                         }
                                                     }
                                                 }
+                                            }).on('hidden.bs.modal', function (e) {
+                                                item.callback(result);
                                             });
                                             break;
                                         case 'date':
@@ -817,7 +820,7 @@ var Query = /** @class */ (function () {
                                                 setTimeout(function () {
                                                     toastr.clear();
                                                 }, 1000);
-                                                _this["do"](item.request, item.callback);
+                                                _this.do(item.request, item.callback);
                                             });
                                             var cancelBtn = document.getElementById('cancel_socket_query_' + btnGuid);
                                             cancelBtn.addEventListener('click', function (e) {
@@ -880,10 +883,10 @@ var Query = /** @class */ (function () {
             });
         });
     };
-    Query.prototype.queryWS = function (obj) {
-        if (obj === void 0) { obj = {}; }
-        return __awaiter(this, void 0, void 0, function () {
+    Query.prototype.queryWS = function () {
+        return __awaiter(this, arguments, void 0, function (obj) {
             var _this = this;
+            if (obj === void 0) { obj = {}; }
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1074,7 +1077,7 @@ var Query = /** @class */ (function () {
             });
         });
     };
-    Query.prototype["do"] = function (obj, cb) {
+    Query.prototype.do = function (obj, cb) {
         return __awaiter(this, void 0, void 0, function () {
             var _this = this;
             return __generator(this, function (_a) {
@@ -1125,8 +1128,7 @@ function init(params) {
     //
     // console.log('Me', me)
     // console.log('query_.do==>', typeof query_.do)
-    return query_["do"].bind(query_);
+    return query_.do.bind(query_);
 }
-exports["default"] = init;
 // @ts-ignore
 globalObj === null || globalObj === void 0 ? void 0 : globalObj.initGoCoreQuery = init;

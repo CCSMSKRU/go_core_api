@@ -749,10 +749,12 @@ class Query {
                                             if (toastr && typeof toastr['info'] === 'function') {
                                                 toastr['info'](cancelMsg)
                                             }
-                                            item.callback(result)
+                                            // item.callback(result)
                                         }
                                     }
                                 }
+                            }).on('hidden.bs.modal', function (e) {
+                                item.callback(result)
                             })
 
 

@@ -1,0 +1,22 @@
+Библиотека теперь умеет создавать и передавать uuid устройства, и обрабатывать условия "Запрашивать ли согласие".
+Позволяет гибко регулировать опции и обновлять их на лету. Вы можете в параметрах передать функцию, которая будет
+вызвана при подключении (если необходимо), чтобы запросить согласие пользователя на использование куков.
+Функция имеет коллбэк синтаксис, то есть, на стороне приложения использующего библиотеку,
+будет вызвана указанная в параметрах функция (для отрисавки запроса на разрешение) и после получения ответа,
+должна быть вызвана коллбэк функция с результатом.
+Есть и другой путь. Функцию можно указать пустую, с вызовом cb(false), а запрос разрешения делать в приложении,
+в любом подходящем компоненте уже после, опираясь на поля из инстанса библиотеки (uuid,useUUIDIsAgree,useUUIDIgnoreAgree,params...)
+и используя оттуда же методы (setUUIDAgree,setUUIDIgnoreAgree), которые также произведут reInit (если не указать обратное).
+Кроме этого был обновлен webpack и все прочие зависимости. Код пока что остается довольно старым и грязным.
+
+EN:
+The library now can create and pass the device uuid, and handle the "Ask for consent" conditions.
+Allows you to flexibly adjust options and update them on the fly. You can pass a function in the parameters that will be
+called when connecting (if necessary) to request the user's consent to use cookies.
+The function has a callback syntax, that is, on the side of the application using the library,
+the specified function will be called (to display the request for permission) and after receiving the response,
+the callback function with the result must be called.
+There is another way. You can specify an empty function with a call to cb(false), and request permission in the application,
+in any suitable component already after, relying on the fields from the library instance (uuid, useUUIDIsAgree, useUUIDIgnoreAgree, params ...)
+and using methods from there (setUUIDAgree, setUUIDIgnoreAgree), which will also reInit (if not specified otherwise).
+In addition, webpack and all other dependencies have been updated. The code remains quite old and dirty for now.
