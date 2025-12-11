@@ -770,14 +770,14 @@ var Query = /** @class */ (function () {
                                                     error: {
                                                         label: cancelBtnText,
                                                         callback: function () {
-                                                            if (toastr && typeof toastr['info'] === 'function') {
-                                                                toastr['info'](cancelMsg);
-                                                            }
                                                             // item.callback(result)
                                                         }
                                                     }
                                                 }
                                             }).on('hidden.bs.modal', function (e) {
+                                                if (toastr && typeof toastr['info'] === 'function') {
+                                                    toastr['info'](cancelMsg);
+                                                }
                                                 item.callback(result);
                                             });
                                             break;
