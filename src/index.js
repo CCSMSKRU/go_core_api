@@ -735,6 +735,7 @@ var Query = /** @class */ (function () {
                                             else {
                                                 html = result.toastr.message;
                                             }
+                                            var confirmed_1;
                                             var bbd1_1 = bootbox.dialog({
                                                 title: result.toastr.title,
                                                 message: html,
@@ -764,6 +765,7 @@ var Query = /** @class */ (function () {
                                                             else {
                                                                 item.request.params.confirm = true;
                                                             }
+                                                            confirmed_1 = true;
                                                             _this.do(item.request, item.callback);
                                                         }
                                                     },
@@ -775,6 +777,8 @@ var Query = /** @class */ (function () {
                                                     }
                                                 }
                                             }).on('hidden.bs.modal', function (e) {
+                                                if (confirmed_1)
+                                                    return;
                                                 if (toastr && typeof toastr['info'] === 'function') {
                                                     toastr['info'](cancelMsg);
                                                 }

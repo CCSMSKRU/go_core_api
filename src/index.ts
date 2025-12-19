@@ -705,6 +705,7 @@ class Query {
                                 html = result.toastr.message
                             }
 
+                            let confirmed
 
                             const bbd1 = bootbox.dialog({
                                 title: result.toastr.title,
@@ -738,6 +739,7 @@ class Query {
                                                 item.request.params.confirm = true
                                             }
 
+                                            confirmed = true
                                             this.do(item.request, item.callback)
                                         }
                                     },
@@ -752,6 +754,7 @@ class Query {
                                     }
                                 }
                             }).on('hidden.bs.modal', function (e) {
+                                if (confirmed) return
                                 if (toastr && typeof toastr['info'] === 'function') {
                                     toastr['info'](cancelMsg)
                                 }
