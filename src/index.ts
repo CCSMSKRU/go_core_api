@@ -3,7 +3,7 @@ import {QueryOptions, QueryParams, QueryStack, QueryStorage} from "./models"
 import {getMsg as getMsg_} from "./lang"
 import {v4 as uuidv4} from 'uuid'
 
-function getMsg(msgAlias: string, lang?: string): string {
+let getMsg = function (msgAlias: string, lang?: string): string {
     return getMsg_(msgAlias, lang || this?.lang)
 }
 
@@ -257,7 +257,7 @@ class Query {
         this.params = params
 
         this.lang = params.lang || 'en'
-        getMsg.bind(this)
+        getMsg = getMsg.bind(this)
 
         this.https = typeof params.https !== 'undefined' ? params.https : true
         this.host = (params.host || '').replace(/\/$/, '')
@@ -918,6 +918,7 @@ class Query {
                                 html = (resultData?.message ?? result.toastr.message)
                             }
 
+                            let confirmed
 
                             const bbd1 = bootbox.dialog({
                                 title: resultData?.title ?? result.toastr.title,
@@ -951,6 +952,7 @@ class Query {
                                                 item.request.params.confirm = true
                                             }
 
+                                            confirmed = true
                                             this.do(item.request, item.callback)
                                         }
                                     },
@@ -959,13 +961,17 @@ class Query {
                                         callback: function () {
 
 
-                                            if (toastr && typeof toastr['info'] === 'function') {
-                                                toastr['info'](cancelMsg)
-                                            }
-                                            item.callback(result)
+
+                                            // item.callback(result)
                                         }
                                     }
                                 }
+                            }).on('hidden.bs.modal', function (e) {
+                                if (confirmed) return
+                                if (toastr && typeof toastr['info'] === 'function') {
+                                    toastr['info'](cancelMsg)
+                                }
+                                item.callback(result)
                             })
 
                             bbd1.find('modal-dialog')?.addClass('server-confirm-dialog')

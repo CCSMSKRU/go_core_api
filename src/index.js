@@ -52,9 +52,9 @@ exports.default = init;
 var socket_io_client_1 = require("socket.io-client");
 var lang_1 = require("./lang");
 var uuid_1 = require("uuid");
-function getMsg(msgAlias, lang) {
+var getMsg = function (msgAlias, lang) {
     return (0, lang_1.getMsg)(msgAlias, lang || (this === null || this === void 0 ? void 0 : this.lang));
-}
+};
 var WS_NOT_CONNECTED = 'WS_NOT_CONNECTED';
 var WS_CONNECTED = 'WS_CONNECTED';
 var WS_CONNECTING = 'WS_CONNECTING';
@@ -252,7 +252,7 @@ var Query = /** @class */ (function () {
         // Save params (for reInit)
         this.params = params;
         this.lang = params.lang || 'en';
-        getMsg.bind(this);
+        getMsg = getMsg.bind(this);
         this.https = typeof params.https !== 'undefined' ? params.https : true;
         this.host = (params.host || '').replace(/\/$/, '');
         var defaultPort = this.https ? 443 : 80;
@@ -1006,6 +1006,7 @@ var Query = /** @class */ (function () {
                                             else {
                                                 html = ((_h = resultData === null || resultData === void 0 ? void 0 : resultData.message) !== null && _h !== void 0 ? _h : result.toastr.message);
                                             }
+                                            var confirmed_1;
                                             var bbd1_1 = bootbox.dialog({
                                                 title: (_j = resultData === null || resultData === void 0 ? void 0 : resultData.title) !== null && _j !== void 0 ? _j : result.toastr.title,
                                                 message: html,
@@ -1035,19 +1036,24 @@ var Query = /** @class */ (function () {
                                                             else {
                                                                 item.request.params.confirm = true;
                                                             }
+                                                            confirmed_1 = true;
                                                             _this.do(item.request, item.callback);
                                                         }
                                                     },
                                                     error: {
                                                         label: cancelBtnText,
                                                         callback: function () {
-                                                            if (toastr && typeof toastr['info'] === 'function') {
-                                                                toastr['info'](cancelMsg);
-                                                            }
-                                                            item.callback(result);
+                                                            // item.callback(result)
                                                         }
                                                     }
                                                 }
+                                            }).on('hidden.bs.modal', function (e) {
+                                                if (confirmed_1)
+                                                    return;
+                                                if (toastr && typeof toastr['info'] === 'function') {
+                                                    toastr['info'](cancelMsg);
+                                                }
+                                                item.callback(result);
                                             });
                                             (_k = bbd1_1.find('modal-dialog')) === null || _k === void 0 ? void 0 : _k.addClass('server-confirm-dialog');
                                             break;
