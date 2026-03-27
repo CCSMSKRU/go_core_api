@@ -4,3 +4,5 @@ src/SYNC
 package-lock.json
 /TEMP/
 /TMP/
+
+.env

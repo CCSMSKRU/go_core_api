@@ -52,9 +52,6 @@ exports.default = init;
 var socket_io_client_1 = require("socket.io-client");
 var lang_1 = require("./lang");
 var uuid_1 = require("uuid");
-var getMsg = function (msgAlias, lang) {
-    return (0, lang_1.getMsg)(msgAlias, lang || (this === null || this === void 0 ? void 0 : this.lang));
-};
 var WS_NOT_CONNECTED = 'WS_NOT_CONNECTED';
 var WS_CONNECTED = 'WS_CONNECTED';
 var WS_CONNECTING = 'WS_CONNECTING';
@@ -100,6 +97,10 @@ var uncollapseData = function (obj) {
     return res;
 };
 var getCookie = function (name) {
+    if (typeof document === 'undefined')
+        return '';
+    if (!document || !document.cookie)
+        return '';
     var val = document.cookie.split('; ').reduce(function (r, v) {
         var parts = v.split('=');
         return parts[0] === name ? decodeURIComponent(parts[1]) : r;
@@ -108,151 +109,175 @@ var getCookie = function (name) {
         return null;
     return val;
 };
-function tryDo(obj, cb) {
-    var _this = this;
-    // Если уже определена ошибка (либо во время авторизации либо во время выполнения запроса), то
-    // Отклоняем все запросы. Позже эта ошибка будет сброшена
-    if (this.status === ERROR) {
-        if (this.debugFull)
-            console.log('Server error. Finish', this.response);
-        return cb(null, this.auth_response);
-    }
-    if (this.status === AUTH_ERROR) {
-        if (this.debugFull)
-            console.log('Error in auth process. Finish', this.auth_response);
-        return cb(null, this.auth_response);
-    }
-    // Запускаем авторизацию и вызываем запрос заново (он попадет в цикл ожидание пока авторизация не пройдет)
-    if (this.status === NO_AUTH) {
-        if (this.debugFull)
-            console.log('Not authorized yet. Start process and call request again', { obj: obj, res: this.response });
-        this.auth();
-        if (!this.autoAuth)
-            return cb(null, this.response);
-        return tryDo.call(this, obj, cb);
-    }
-    // Производится авторизация, немного ждем и вызываем заново. Таким образом рано или поздно статус изменется
-    if (this.status === IN_AUTH) {
-        if (this.debugFull)
-            console.log('Still in auth process. Wait', { res: this.response });
-        setTimeout(function () {
-            if (!_this.autoAuth) {
-                _this.status = NO_AUTH;
-                return cb(null, _this.response);
-            }
-            tryDo.call(_this, obj, cb);
-        }, 100);
-        return;
-    }
-    if (this.status === READY) {
-        if (this.debugFull)
-            console.log('Status READY. Run query.', obj);
-        var res_1;
-        var counter_1 = 0;
-        var q_1 = function () { return __awaiter(_this, void 0, void 0, function () {
-            var tkn, e_1;
-            var _this = this;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 2, , 6]);
-                        return [4 /*yield*/, this.query(obj)];
-                    case 1:
-                        res_1 = _b.sent();
-                        this.response = res_1;
-                        if (res_1.code) {
-                            // Сессия стухла
-                            if (res_1.code === -4) {
-                                // if (!this.autoAuth) return cb(null, res)
-                                this.status = NO_AUTH;
-                                return [2 /*return*/, tryDo.call(this, obj, cb)];
-                            }
-                            // Логическая ошибка
-                            return [2 /*return*/, cb(null, res_1)];
-                        }
-                        // Установим токен если это был запрос авторизации
-                        if (!this.skipSetTokenOnLogin
-                            && obj.command === this.loginCommand
-                            && ((_a = obj.object) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === this.loginObject) {
-                            tkn = (res_1 === null || res_1 === void 0 ? void 0 : res_1.data)
-                                ? res_1.data[this.loginTokenFieldName]
-                                : res_1[this.loginTokenFieldName];
-                            if (tkn) {
-                                this.token = tkn;
-                                if (this.socket)
-                                    this.socket.auth.token = this.token;
-                                this.storage.set(this.tokenStorageKey, this.token);
-                            }
-                        }
-                        return [2 /*return*/, cb(null, res_1)];
-                    case 2:
-                        e_1 = _b.sent();
-                        // Произошла некая ошибка при запросе (например пропало соединение с сервером)
-                        // Будем повторять несколько раз, прежде чем выдать ошибку
-                        counter_1++;
-                        if (!(counter_1 <= this.tryCount)) return [3 /*break*/, 4];
-                        console.log("Error while do query. Try:".concat(counter_1, " of ").concat(this.tryCount, ". Wait ").concat(this.tryPause), e_1);
-                        return [4 /*yield*/, new Promise(function (resolve) {
-                                setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
-                                    var _a;
-                                    return __generator(this, function (_b) {
-                                        switch (_b.label) {
-                                            case 0:
-                                                _a = resolve;
-                                                return [4 /*yield*/, q_1()];
-                                            case 1:
-                                                _a.apply(void 0, [_b.sent()]);
-                                                return [2 /*return*/];
-                                        }
-                                    });
-                                }); }, _this.tryPause);
-                            })];
-                    case 3:
-                        res_1 = _b.sent();
-                        return [2 /*return*/, res_1];
-                    case 4:
-                        console.log("Error while do query. Finish", e_1);
-                        this.status = ERROR;
-                        this.response = e_1;
-                        setTimeout(function () {
-                            // Вернем в состояние готового (подключение могло восстановиться)
-                            _this.status = READY;
-                            _this.response = null;
-                        }, 3000);
-                        return [2 /*return*/, cb(null, {
-                                code: 500,
-                                e: e_1,
-                                message: 'Server is not available'
-                            })];
-                    case 5: return [3 /*break*/, 6];
-                    case 6: return [2 /*return*/];
-                }
-            });
-        }); };
-        q_1();
-    }
-    else {
-        return cb(new Error("Unknown status: ".concat(this.status)));
-    }
-}
 var isWindow = (typeof window === 'object' && window);
 var globalObj = isWindow ? window : {};
 // @ts-ignore
 var toastr = isWindow ? globalObj === null || globalObj === void 0 ? void 0 : globalObj.toastr : undefined;
 // @ts-ignore
 var bootbox = isWindow ? globalObj === null || globalObj === void 0 ? void 0 : globalObj.bootbox : undefined;
-// // @ts-ignore
-// let $ = window?.$
+// @ts-ignore
+var $ = isWindow ? (globalObj === null || globalObj === void 0 ? void 0 : globalObj.jQuery) || (globalObj === null || globalObj === void 0 ? void 0 : globalObj.$) : undefined;
 var Query = /** @class */ (function () {
     function Query(params) {
+        var _this = this;
+        this._getMsg = function (msgAlias, lang) {
+            return (0, lang_1.getMsg)(msgAlias, lang || (_this === null || _this === void 0 ? void 0 : _this.lang));
+        };
+        this._tryDo = function (obj, cb) {
+            // Если уже определена ошибка (либо во время авторизации либо во время выполнения запроса), то
+            // Отклоняем все запросы. Позже эта ошибка будет сброшена
+            if (_this.status === ERROR) {
+                if (_this.debugFull)
+                    console.log('Server error. Finish', _this.response);
+                return cb(null, _this.auth_response);
+            }
+            if (_this.status === AUTH_ERROR) {
+                if (_this.debugFull)
+                    console.log('Error in auth process. Finish', _this.auth_response);
+                return cb(null, _this.auth_response);
+            }
+            // Запускаем авторизацию и вызываем запрос заново (он попадет в цикл ожидание пока авторизация не пройдет)
+            if (_this.status === NO_AUTH) {
+                if (_this.debugFull)
+                    console.log('Not authorized yet. Start process and call request again', { obj: obj, res: _this.response });
+                _this.auth();
+                if (!_this.autoAuth)
+                    return cb(null, _this.response);
+                return _this._tryDo(obj, cb);
+            }
+            // Производится авторизация, немного ждем и вызываем заново. Таким образом рано или поздно статус изменется
+            if (_this.status === IN_AUTH) {
+                if (_this.debugFull)
+                    console.log('Still in auth process. Wait', { res: _this.response });
+                setTimeout(function () {
+                    if (!_this.autoAuth) {
+                        _this.status = NO_AUTH;
+                        return cb(null, _this.response);
+                    }
+                    _this._tryDo(obj, cb);
+                }, 100);
+                return;
+            }
+            if (_this.status === READY) {
+                if (_this.debugFull)
+                    console.log('Status READY. Run query.', obj);
+                var res_1;
+                var counter_1 = 0;
+                var q_1 = function () { return __awaiter(_this, void 0, void 0, function () {
+                    var e_1, res_2;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                _a.trys.push([0, 2, , 3]);
+                                return [4 /*yield*/, this.query(obj)];
+                            case 1:
+                                res_1 = _a.sent();
+                                this.response = res_1;
+                                if (this.debugFull)
+                                    console.log('Finished with result', res_1);
+                                // if (res.status === 'ERROR') {
+                                //     this.status = ERROR
+                                //     return cb(null, res)
+                                // }
+                                if ((res_1 === null || res_1 === void 0 ? void 0 : res_1.auth_status) === 'NO_AUTH') {
+                                    this.status = NO_AUTH;
+                                    return [2 /*return*/, this._tryDo(obj, cb)];
+                                }
+                                if ((res_1 === null || res_1 === void 0 ? void 0 : res_1.auth_status) === 'AUTH_ERROR') {
+                                    this.status = AUTH_ERROR;
+                                    this.auth_response = res_1;
+                                    return [2 /*return*/, cb(null, res_1)];
+                                }
+                                // console.log('Finish with res', res)
+                                cb(null, res_1);
+                                return [3 /*break*/, 3];
+                            case 2:
+                                e_1 = _a.sent();
+                                if (this.debugFull)
+                                    console.log('CATCH error in tryDo', e_1);
+                                if (counter_1 < 2) {
+                                    counter_1++;
+                                    setTimeout(function () {
+                                        q_1();
+                                    }, 500);
+                                    return [2 /*return*/];
+                                }
+                                res_2 = {
+                                    status: 'ERROR',
+                                    msg: e_1.message || e_1,
+                                    code: e_1.code || 500
+                                };
+                                this.response = res_2;
+                                cb(null, res_2);
+                                return [3 /*break*/, 3];
+                            case 3: return [2 /*return*/];
+                        }
+                    });
+                }); };
+                q_1();
+            }
+        };
+        this.init = function () { return __awaiter(_this, void 0, void 0, function () {
+            var _a, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        _a = this;
+                        _b = this.token;
+                        if (_b) return [3 /*break*/, 2];
+                        return [4 /*yield*/, this.storage.get(this.tokenStorageKey)];
+                    case 1:
+                        _b = (_c.sent());
+                        _c.label = 2;
+                    case 2:
+                        _a.token = _b;
+                        if (this.debugFull)
+                            console.log('IN init(): INFO==>', { token: this.token });
+                        if (!this.useAJAX) {
+                            this.connectSocket();
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        }); };
+        this.do = function (obj, cb) { return __awaiter(_this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (typeof cb === 'function') {
+                            return [2 /*return*/, this._tryDo(obj, function (err, res) {
+                                    try {
+                                        cb(err || res);
+                                    }
+                                    catch (e) {
+                                        console.error('Error in callback function after execution go_core_query', obj);
+                                        console.error(e);
+                                    }
+                                })];
+                        }
+                        return [4 /*yield*/, new Promise(function (resolve, reject) {
+                                // Здесь используем коллбек функцию, так как с помощью async/await делать рекурсивную асинхронную функцию
+                                // менее удобно. Соответственно await перед tryDo оускаем
+                                _this._tryDo(obj, function (err, res) {
+                                    if (err)
+                                        return reject(err);
+                                    resolve(res);
+                                });
+                            })];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        }); };
+        this._resetState(params);
+    }
+    Query.prototype._resetState = function (params) {
         var _this = this;
         if (!params)
             params = {};
         // Save params (for reInit)
         this.params = params;
         this.lang = params.lang || 'en';
-        getMsg = getMsg.bind(this);
         this.https = typeof params.https !== 'undefined' ? params.https : true;
         this.host = (params.host || '').replace(/\/$/, '');
         var defaultPort = this.https ? 443 : 80;
@@ -277,7 +302,7 @@ var Query = /** @class */ (function () {
         this.extraHeaders = params.extraHeaders;
         this.transports = params.transports;
         this.withCredentials = params.withCredentials;
-        this.device_type = params.device_type || 'BROWSER';
+        this.device_type = params.device_type || 'WEB';
         this.device_info = params.device_info;
         this.socketQuery_stack = {
             items: {},
@@ -384,7 +409,9 @@ var Query = /** @class */ (function () {
                         case 3:
                             if (this.env === 'browser') {
                                 if (this.browserStorage === 'cookie') {
-                                    document.cookie = "".concat(key, "=").concat(val);
+                                    if (typeof document !== 'undefined') {
+                                        document.cookie = "".concat(key, "=").concat(val);
+                                    }
                                 }
                                 else if (this.browserStorage === 'localStorage') {
                                     console.warn('Functionality in development (storage - set - localStorage)');
@@ -407,7 +434,8 @@ var Query = /** @class */ (function () {
         this.debug = params.debug;
         this.debugFull = params.debugFull;
         this.doNotDeleteCollapseDataParam = params.doNotDeleteCollapseDataParam;
-        this.status = this.token || !this.autoAuth ? READY : NO_AUTH;
+        // this.status = this.token || !this.autoAuth ? READY : NO_AUTH
+        this.status = READY;
         // Будем плавно увеличивать таймаут, если сразу не удается подключиться.
         // Сбросим после успешного подключения
         this.tryConnectCnt = 0;
@@ -415,7 +443,7 @@ var Query = /** @class */ (function () {
         this.init().then().catch(function (e) {
             console.error('ERROR:GoCoreQuery:init:', e);
         });
-    }
+    };
     Query.prototype.setUUID = function () {
         return __awaiter(this, void 0, void 0, function () {
             var uuid, _a, useUUIDIgnoreAgree, set, agree, agree_1;
@@ -575,41 +603,16 @@ var Query = /** @class */ (function () {
             });
         });
     };
-    Query.prototype.init = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var _a, _b;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0:
-                        _a = this;
-                        _b = this.token;
-                        if (_b) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.storage.get(this.tokenStorageKey)];
-                    case 1:
-                        _b = (_c.sent());
-                        _c.label = 2;
-                    case 2:
-                        _a.token = _b;
-                        if (this.debugFull)
-                            console.log('IN init(): INFO==>', { token: this.token });
-                        if (!this.useAJAX) {
-                            this.connectSocket();
-                        }
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
     Query.prototype.destroy = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, _b, _c;
-            return __generator(this, function (_d) {
+            return __generator(this, function (_a) {
                 if (this.socket) {
-                    (_a = this.socket) === null || _a === void 0 ? void 0 : _a.removeAllListeners();
-                    (_b = this.socket) === null || _b === void 0 ? void 0 : _b.disconnect();
-                    (_c = this.socket) === null || _c === void 0 ? void 0 : _c.close();
+                    this.socket.removeAllListeners();
+                    this.socket.disconnect();
+                    this.socket.close();
                 }
                 this.socket = null;
+                this.ws_status = WS_NOT_CONNECTED;
                 return [2 /*return*/];
             });
         });
@@ -624,8 +627,7 @@ var Query = /** @class */ (function () {
                         return [4 /*yield*/, this.destroy()];
                     case 1:
                         _a.sent();
-                        this.constructor(this.params);
-                        // await this.init()
+                        this._resetState(this.params);
                         if (this.debug)
                             console.log('REINITED!');
                         return [2 /*return*/];
@@ -656,26 +658,50 @@ var Query = /** @class */ (function () {
     };
     Query.prototype.queryAJAX = function () {
         return __awaiter(this, arguments, void 0, function (obj) {
-            var httpS, data, options;
+            var url, data, headers, response, e_2, httpS_1, options_1;
             if (obj === void 0) { obj = {}; }
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        httpS = this.https ? require('https') : require('http');
+                        url = "".concat(this.https ? 'https' : 'http', "://").concat(this.host).concat(this.port ? ':' + this.port : '').concat(this.url);
                         data = JSON.stringify(obj);
-                        options = {
+                        headers = {
+                            'Content-Type': 'application/json',
+                            'Authorization': "Bearer ".concat(this.token)
+                        };
+                        if (!(typeof fetch !== 'undefined')) return [3 /*break*/, 6];
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 4, , 5]);
+                        return [4 /*yield*/, fetch(url, {
+                                method: 'POST',
+                                headers: headers,
+                                body: data
+                            })];
+                    case 2:
+                        response = _a.sent();
+                        if (!response.ok) {
+                            throw new Error("HTTP error! status: ".concat(response.status));
+                        }
+                        return [4 /*yield*/, response.json()];
+                    case 3: return [2 /*return*/, _a.sent()];
+                    case 4:
+                        e_2 = _a.sent();
+                        console.error('Fetch error:', e_2.message);
+                        throw e_2;
+                    case 5: return [3 /*break*/, 8];
+                    case 6:
+                        httpS_1 = this.https ? require('https') : require('http');
+                        headers['Content-Length'] = data.length.toString();
+                        options_1 = {
                             hostname: this.host,
                             port: this.port,
                             path: this.url,
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Content-Length': data.length,
-                                'Authorization': "Bearer ".concat(this.token)
-                            }
+                            headers: headers
                         };
                         return [4 /*yield*/, new Promise(function (resolve, reject) {
-                                var req = httpS.request(options, function (res) {
+                                var req = httpS_1.request(options_1, function (res) {
                                     res.setEncoding('utf8');
                                     var rawData = '';
                                     res.on('data', function (chunk) {
@@ -693,17 +719,14 @@ var Query = /** @class */ (function () {
                                     });
                                 });
                                 req.on('error', function (error) {
-                                    console.error(error);
+                                    console.error('Request error:', error);
                                     reject(error);
                                 });
                                 req.write(data);
                                 req.end();
                             })];
-                    case 1: 
-                    // if (this.cookie){
-                    //     options.headers['Set-Cookie'] = this.cookie
-                    // }
-                    return [2 /*return*/, _a.sent()];
+                    case 7: return [2 /*return*/, _a.sent()];
+                    case 8: return [2 /*return*/];
                 }
             });
         });
@@ -988,9 +1011,9 @@ var Query = /** @class */ (function () {
                                         return false;
                                     }
                                     item.request.params.confirmKey = resultData.confirmKey || resultData.key;
-                                    var cancelMsg = (_d = resultData.cancelMsg) !== null && _d !== void 0 ? _d : getMsg('cancelMsg');
-                                    var okBtnText = (_e = resultData.okBtnText) !== null && _e !== void 0 ? _e : getMsg('okBtnText');
-                                    var cancelBtnText = (_f = resultData.cancelBtnText) !== null && _f !== void 0 ? _f : getMsg('cancelBtnText');
+                                    var cancelMsg = (_d = resultData.cancelMsg) !== null && _d !== void 0 ? _d : _this._getMsg('cancelMsg');
+                                    var okBtnText = (_e = resultData.okBtnText) !== null && _e !== void 0 ? _e : _this._getMsg('okBtnText');
+                                    var cancelBtnText = (_f = resultData.cancelBtnText) !== null && _f !== void 0 ? _f : _this._getMsg('cancelBtnText');
                                     switch (resultData.confirmType) {
                                         case 'dialog':
                                             if (!bootbox || typeof bootbox.dialog !== 'function') {
@@ -1015,22 +1038,46 @@ var Query = /** @class */ (function () {
                                                         label: okBtnText,
                                                         callback: function () {
                                                             if (resultData.responseType === 'text') {
-                                                                item.request.params.confirm = $('#server-confirm-input').val();
+                                                                var input_id = 'server-confirm-input';
+                                                                var input_val = '';
+                                                                if (typeof document !== 'undefined') {
+                                                                    var input_el = typeof document !== 'undefined' ? document.getElementById(input_id) : null;
+                                                                    if (input_el)
+                                                                        input_val = input_el.value;
+                                                                }
+                                                                item.request.params.confirm = $ ? $('#' + input_id).val() : input_val;
                                                             }
                                                             else if (resultData.responseType === 'custom') {
                                                                 var resObj_1 = {};
-                                                                bbd1_1
-                                                                    .find(resultData.inputsClass ? '.' + resultData.inputsClass : '.server-confirm-input')
-                                                                    .each(function (index) {
-                                                                    switch ($(this).attr('type')) {
-                                                                        case 'checkbox':
-                                                                            resObj_1[$(this).attr('id')] = $(this).attr('checked') === 'checked';
-                                                                            break;
-                                                                        default:
-                                                                            resObj_1[$(this).attr('id')] = $(this).val('checked');
-                                                                            break;
-                                                                    }
-                                                                });
+                                                                if ($ && bbd1_1.find) {
+                                                                    bbd1_1
+                                                                        .find(resultData.inputsClass ? '.' + resultData.inputsClass : '.server-confirm-input')
+                                                                        .each(function (index) {
+                                                                        switch ($(this).attr('type')) {
+                                                                            case 'checkbox':
+                                                                                resObj_1[$(this).attr('id')] = $(this).attr('checked') === 'checked';
+                                                                                break;
+                                                                            default:
+                                                                                resObj_1[$(this).attr('id')] = $(this).val();
+                                                                                break;
+                                                                        }
+                                                                    });
+                                                                }
+                                                                else {
+                                                                    var selector = resultData.inputsClass ? '.' + resultData.inputsClass : '.server-confirm-input';
+                                                                    var elements = typeof document !== 'undefined' ? document.querySelectorAll(selector) : [];
+                                                                    elements.forEach(function (el) {
+                                                                        var id = el.id || el.getAttribute('id');
+                                                                        if (!id)
+                                                                            return;
+                                                                        if (el.type === 'checkbox') {
+                                                                            resObj_1[id] = el.checked;
+                                                                        }
+                                                                        else {
+                                                                            resObj_1[id] = el.value;
+                                                                        }
+                                                                    });
+                                                                }
                                                                 item.request.params.confirm = resObj_1;
                                                             }
                                                             else {
@@ -1064,7 +1111,7 @@ var Query = /** @class */ (function () {
                                                 console.warn("toastr is not available or unknown type of toastr: ".concat(result.toastr.type));
                                                 break;
                                             }
-                                            if (!document) {
+                                            if (typeof document === 'undefined') {
                                                 console.warn("document not available");
                                                 break;
                                             }
@@ -1072,10 +1119,10 @@ var Query = /** @class */ (function () {
                                             toastr[result.toastr.type](result.toastr.message +
                                                 '<div style="width: 100%;"><button id="confirm_socket_query_' + btnGuid +
                                                 '" type="button" class="btn clear">' +
-                                                getMsg('okBtnTextDefault') +
+                                                _this._getMsg('okBtnTextDefault') +
                                                 '</button> <button id="cancel_socket_query_' +
                                                 btnGuid + '" type="button" class="btn clear">' +
-                                                getMsg('cancelBtnText') +
+                                                _this._getMsg('cancelBtnText') +
                                                 '</button></div>', '', {
                                                 "closeButton": false,
                                                 "debug": false,
@@ -1094,43 +1141,52 @@ var Query = /** @class */ (function () {
                                                 "hideMethod": "fadeOut",
                                                 "tapToDismiss": false
                                             });
-                                            var confirmBtn = document.getElementById('confirm_socket_query_' + btnGuid);
-                                            confirmBtn.addEventListener('click', function (e) {
-                                                item.request.params.confirm = true;
-                                                setTimeout(function () {
-                                                    toastr.clear();
-                                                }, 1000);
-                                                _this.do(item.request, item.callback);
-                                            });
-                                            var cancelBtn = document.getElementById('cancel_socket_query_' + btnGuid);
-                                            cancelBtn.addEventListener('click', function (e) {
-                                                toastr['info'](cancelMsg);
-                                                setTimeout(function () {
-                                                    toastr.clear();
-                                                }, 1000);
-                                                item.callback(result);
-                                            });
+                                            var confirmBtn = typeof document !== 'undefined' ? document.getElementById('confirm_socket_query_' + btnGuid) : null;
+                                            if (confirmBtn) {
+                                                confirmBtn.addEventListener('click', function (e) {
+                                                    item.request.params.confirm = true;
+                                                    setTimeout(function () {
+                                                        if (typeof toastr !== 'undefined')
+                                                            toastr.clear();
+                                                    }, 1000);
+                                                    _this.do(item.request, item.callback);
+                                                });
+                                            }
+                                            var cancelBtn = typeof document !== 'undefined' ? document.getElementById('cancel_socket_query_' + btnGuid) : null;
+                                            if (cancelBtn) {
+                                                cancelBtn.addEventListener('click', function (e) {
+                                                    if (typeof toastr !== 'undefined')
+                                                        toastr['info'](cancelMsg);
+                                                    setTimeout(function () {
+                                                        if (typeof toastr !== 'undefined')
+                                                            toastr.clear();
+                                                    }, 1000);
+                                                    item.callback(result);
+                                                });
+                                            }
                                             break;
                                     }
                                     _this.socketQuery_stack.removeItem(callback_id);
                                     return false;
                                 }
                                 if (resultData.system_download_now) {
-                                    if (!document) {
+                                    if (typeof document === 'undefined') {
                                         console.warn("document not available");
                                     }
                                     else {
                                         var linkName = 'my_download_link' + Date.now() + '_' + Math.random();
                                         var nameRu = resultData.name_ru || resultData.filename;
-                                        var body_ = document.getElementsByTagName('body')[0];
-                                        var a = document.createElement('a');
-                                        a.setAttribute('id', linkName);
-                                        a.setAttribute('href', resultData.path + resultData.filename);
-                                        a.setAttribute('download', nameRu);
-                                        a.setAttribute('style', "display:none;");
-                                        body_.appendChild(a);
-                                        a.click();
-                                        a.remove();
+                                        var body_ = typeof document !== 'undefined' ? document.getElementsByTagName('body')[0] : null;
+                                        if (body_) {
+                                            var a = document.createElement('a');
+                                            a.setAttribute('id', linkName);
+                                            a.setAttribute('href', resultData.path + resultData.filename);
+                                            a.setAttribute('download', nameRu);
+                                            a.setAttribute('style', "display:none;");
+                                            body_.appendChild(a);
+                                            a.click();
+                                            a.remove();
+                                        }
                                     }
                                 }
                                 item.callback(result);
@@ -1244,15 +1300,40 @@ var Query = /** @class */ (function () {
     };
     Query.prototype.auth = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var now, o, counter, tryQ;
+            var now, limit, retryTimeout, o, counter, tryQ;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        debugger;
                         now = Date.now();
-                        if (this.status === IN_AUTH && now - this.inAuthStarted < 10000) {
+                        limit = 10000;
+                        retryTimeout = 30000;
+                        if (!this.inAuthStarted)
+                            this.inAuthStarted = now;
+                        if (this.status === IN_AUTH && now - this.inAuthStarted < limit) {
                             if (this.debugFull)
                                 console.log('Already in progress', { diff: now - this.inAuthStarted, inAuthStarted: this.inAuthStarted });
+                        }
+                        else if (this.status === IN_AUTH) {
+                            if (this.debug)
+                                console.log("GoCoreQuery: The authorization takes more than ".concat(limit / 1000, "s. We will try again in ").concat(retryTimeout / 1000, "s."));
+                            this.status = ERROR;
+                            setTimeout(function () { return __awaiter(_this, void 0, void 0, function () {
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            if (!(this.status === ERROR)) return [3 /*break*/, 2];
+                                            this.inAuthStarted = now;
+                                            return [4 /*yield*/, this.auth()];
+                                        case 1:
+                                            _a.sent();
+                                            _a.label = 2;
+                                        case 2: return [2 /*return*/];
+                                    }
+                                });
+                            }); }, retryTimeout);
+                            return [2 /*return*/];
                         }
                         this.status = IN_AUTH;
                         this.inAuthStarted = now;
@@ -1280,7 +1361,7 @@ var Query = /** @class */ (function () {
                         };
                         counter = 0;
                         tryQ = function () { return __awaiter(_this, void 0, void 0, function () {
-                            var authRes, e_2;
+                            var authRes, e_3;
                             var _this = this;
                             var _a;
                             return __generator(this, function (_b) {
@@ -1305,7 +1386,7 @@ var Query = /** @class */ (function () {
                                         this.status = READY;
                                         return [2 /*return*/, authRes];
                                     case 2:
-                                        e_2 = _b.sent();
+                                        e_3 = _b.sent();
                                         counter++;
                                         if (!(counter <= this.tryAuthCount)) return [3 /*break*/, 4];
                                         console.log("Error while do auth query. Try:".concat(counter, " of ").concat(this.tryAuthCount, ". Wait ").concat(this.tryAuthPause));
@@ -1328,14 +1409,14 @@ var Query = /** @class */ (function () {
                                         authRes = _b.sent();
                                         return [2 /*return*/, authRes];
                                     case 4:
-                                        console.log("Error while do auth query. Finish", e_2);
+                                        console.log("Error while do auth query. Finish", e_3);
                                         this.status = ERROR;
-                                        this.auth_response = e_2;
+                                        this.auth_response = e_3;
                                         setTimeout(function () {
                                             _this.status = NO_AUTH;
                                             _this.auth_response = null;
                                         }, 3000);
-                                        return [2 /*return*/, e_2];
+                                        return [2 /*return*/, e_3];
                                     case 5: return [3 /*break*/, 6];
                                     case 6: return [2 /*return*/];
                                 }
@@ -1363,37 +1444,6 @@ var Query = /** @class */ (function () {
             });
         });
     };
-    Query.prototype.do = function (obj, cb) {
-        return __awaiter(this, void 0, void 0, function () {
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (typeof cb === 'function') {
-                            return [2 /*return*/, tryDo.call(this, obj, function (err, res) {
-                                    try {
-                                        cb(err || res);
-                                    }
-                                    catch (e) {
-                                        console.error('Error in callback function after execution go_core_query', obj);
-                                        console.error(e);
-                                    }
-                                })];
-                        }
-                        return [4 /*yield*/, new Promise(function (resolve, reject) {
-                                // Здесь используем коллбек функцию, так как с помощью async/await делать рекурсивную асинхронную функцию
-                                // менее удобно. Соответственно await перед tryDo оускаем
-                                tryDo.call(_this, obj, function (err, res) {
-                                    if (err)
-                                        return reject(err);
-                                    resolve(res);
-                                });
-                            })];
-                    case 1: return [2 /*return*/, _a.sent()];
-                }
-            });
-        });
-    };
     return Query;
 }());
 function init(params) {
@@ -1402,5 +1452,7 @@ function init(params) {
     return { api: query_.do.bind(query_), instance: query_ };
 }
 exports.initGoCoreQuery = init;
-// @ts-ignore
-globalObj === null || globalObj === void 0 ? void 0 : globalObj.initGoCoreQuery = init;
+if (globalObj) {
+    // @ts-ignore
+    globalObj.initGoCoreQuery = init;
+}

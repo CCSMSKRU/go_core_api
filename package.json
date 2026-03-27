@@ -1,17 +1,31 @@
 {
   "name": "go_core_query",
-  "version": "0.1.6",
+  "version": "0.2.1",
   "description": "The package allows you to connect to the GoCore core via socket or regular http (s) requests. Works in various environments where there is javascript.",
-  "main": "dist/index.js",
+  "main": "dist/index.node.js",
+  "browser": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "node": {
+        "require": "./dist/index.node.js",
+        "import": "./dist/index.js"
+      },
+      "browser": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "startOld": "cross-env NODE_ENV=development npx webpack serve --open\n",
     "start": "webpack serve --open",
     "build": "cross-env NODE_ENV=production webpack --mode production",
-    "buildNode": "cross-env NODE_ENV=production TARGET=node webpack --mode production",
-    "buildDEBUG": "cross-env NODE_ENV=production webpack",
-    "buildES5": "cross-env NODE_ENV=production ES5=true webpack --mode production",
-    "buildDev": "cross-env NODE_ENV=production ES5=true webpack"
+    "build:browser": "cross-env NODE_ENV=production TARGET=web webpack --mode production",
+    "build:node": "cross-env NODE_ENV=production TARGET=node webpack --mode production",
+    "build:es5": "cross-env NODE_ENV=production ES5=true webpack --mode production",
+    "build:all": "npm run build:browser && npm run build:node && npm run build:es5",
+    "test:node": "node tests/node/test_require.js && node tests/node/test_import.mjs",
+    "buildDEBUG": "cross-env NODE_ENV=production webpack"
   },
   "keywords": [
     "GoCore",
@@ -38,6 +52,7 @@
     "@babel/plugin-proposal-optional-chaining": "^7.18.9",
     "@babel/polyfill": "^7.12.1",
     "@babel/preset-env": "^7.9.6",
+    "@babel/preset-typescript": "^7.28.5",
     "@types/jquery": "^3.5.18",
     "babel-eslint": "^10.1.0",
     "babel-loader": "^9.2.1",
@@ -61,6 +76,7 @@
   },
   "dependencies": {
     "buffer": "^6.0.3",
+    "core-js": "^3.48.0",
     "crypto-browserify": "^3.12.0",
     "https-browserify": "^1.0.0",
     "process": "^0.11.10",

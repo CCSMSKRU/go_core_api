@@ -1,13 +1,13 @@
 // const initQuery = require('@/index')
-import {init as initGoCoreQuery} from '@/index'
+import initGoCoreQuery from '@/index'
 // import initGoCoreQuery from '../dist/index'
 
 const params = {
-    host: '127.0.0.1',
-    port: 7011,
+    host: '192.168.1.127',
+    port: 8084,
     path:'',
     https: false,
-    autoAuth:false,
+    autoAuth:true,
     // useUUID: false,
     // useUUIDAskAgreeFn:()=>{
     //     alert('Вы согласны!')
@@ -16,8 +16,8 @@ const params = {
     // authFunction:()=>{
     //     alert('authFunction')
     // },
-    // login:'ivantgco@gmail.com',
-    // password:'123',
+    login:'ivantgco@gmail.com',
+    password:'123',
     debug:true,
     debugFull:true,
     afterInitConnect:(socket)=>{
@@ -48,11 +48,11 @@ async function init() {
         params: {}
     }
 
-    const o3 = {
-        command: 'getNextPreview',
-        object: 'widget_user_session',
-        params: { filename:null },
-    }
+    // const o3 = {
+    //     command: 'getNextPreview',
+    //     object: 'widget_user_session',
+    //     params: { filename:null },
+    // }
 
     // socketQuery(o, (res) => {
     //     // console.log('getNextPreview', res)
@@ -68,6 +68,10 @@ async function init() {
     // })
 
     const res = await query(o2)
+    if (res.code) {
+        console.log('res.code', res.code)
+        return
+    }
     console.log('res===', res)
 
     // const me = await query(o2)

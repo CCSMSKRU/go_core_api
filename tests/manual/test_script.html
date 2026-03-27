@@ -1,0 +1,35 @@
+<!--
+  ~ Complex Cloud Solutions, LLC (ccs.msk.ru)
+  ~ Ivan Goptarev,
+  ~ With possible, negligent participation of  claude.ai  and/or ChatGPT
+  ~ Copyright (c) 2026.
+  ~ Powered by GoCore (go-core.com)
+  -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test ES5 Bundle</title>
+</head>
+<body>
+    <h1>Testing indexES5.js</h1>
+    <div id="status">Checking...</div>
+    <script src="../../dist/indexES5.js"></script>
+    <script>
+        try {
+            if (typeof window.initGoCoreQuery === 'function') {
+                document.getElementById('status').innerText = 'Success: window.initGoCoreQuery is defined!';
+                document.getElementById('status').style.color = 'green';
+                console.log('initGoCoreQuery found:', window.initGoCoreQuery);
+            } else {
+                document.getElementById('status').innerText = 'Error: window.initGoCoreQuery is NOT defined.';
+                document.getElementById('status').style.color = 'red';
+            }
+        } catch (e) {
+            document.getElementById('status').innerText = 'Error: ' + e.message;
+            document.getElementById('status').style.color = 'red';
+        }
+    </script>
+</body>
+</html>

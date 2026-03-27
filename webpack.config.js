@@ -16,8 +16,7 @@ const filename = ext => isDev
     ? `bundle.${ext}`
     : (buildForES5
             ? `indexES5.${ext}`
-            // : `index${target ? `.${target}` : ''}.${ext}`
-            : `index.${ext}`
+            : (target === 'node' ? `index.node.${ext}` : `index.${ext}`)
     )
 
 const jsLoaders = () => {
@@ -25,12 +24,17 @@ const jsLoaders = () => {
         {
             loader: 'babel-loader',
             options: {
-                presets: [['@babel/preset-env', {
-                    targets: {
-                        node: "current"
-                    },
-                    modules: false
-                }]],
+                presets: [
+                    ['@babel/preset-env', {
+                        targets: buildForES5 
+                            ? "> 0.25%, not dead, IE 11" 
+                            : (target === 'node' ? { node: "current" } : "> 0.25%, not dead"),
+                        useBuiltIns: buildForES5 ? 'entry' : false,
+                        corejs: buildForES5 ? 3 : undefined,
+                        modules: false
+                    }],
+                    '@babel/preset-typescript'
+                ],
                 plugins: ['@babel/plugin-proposal-class-properties', "@babel/plugin-proposal-optional-chaining"]
             }
         }
@@ -46,7 +50,7 @@ const plugins = () => {
     // const res = [new CleanWebpackPlugin()]
     const res = [
         new ProvidePlugin({
-            process: 'process/browser',
+            process: target === 'node' ? 'process' : 'process/browser',
             Buffer: ['buffer', 'Buffer'],
         }),
     ]
@@ -65,39 +69,40 @@ const plugins = () => {
 }
 
 const getExternals = () => {
-    const res = target === 'web'
-        ? undefined
-        : {
-            bufferutil: "bufferutil",
-            "utf-8-validate": "utf-8-validate",
-            crypto: 'commonjs crypto',  // Используйте нативный модуль в Node.js
-            http: 'commonjs http',
-            https: 'commonjs https',
-            stream: 'commonjs stream',
-            net: 'commonjs net',
-            tls: 'commonjs tls',
-            url: 'commonjs url',
-            events: 'commonjs events',
-        }
-
+    if (target === 'web') {
+        return undefined
+    }
+    return {
+        bufferutil: "commonjs bufferutil",
+        "utf-8-validate": "commonjs utf-8-validate",
+        crypto: 'commonjs crypto',
+        http: 'commonjs http',
+        https: 'commonjs https',
+        stream: 'commonjs stream',
+        net: 'commonjs net',
+        tls: 'commonjs tls',
+        url: 'commonjs url',
+        events: 'commonjs events',
+        // Добавьте socket.io-client если он не должен бандлиться для Node.js
+        // "socket.io-client": "commonjs socket.io-client"
+    }
 }
 
 module.exports = {
     context: path.resolve(__dirname, 'src'),
     mode: 'development',
-    entry: ['@babel/polyfill', isDev ? './example.js' : './index.js'],
+    entry: ['@babel/polyfill', isDev ? './example.js' : (target === 'node' ? './index.ts' : './index.ts')],
     output: {
         filename: filename('js'),
         path: path.resolve(__dirname, 'dist'),
-        // library: isDev ? undefined : (buildForES5 ? undefined : 'initGoCoreQuery'),
-        // libraryTarget: isDev ? undefined : (buildForES5 ? undefined : 'umd'),
         library: 'initGoCoreQuery',
         libraryTarget: 'umd',
+        globalObject: "typeof self !== 'undefined' ? self : this",
     },
     target: target || 'web',  // target может быть 'node' или 'web', в зависимости от сборки
     externals: getExternals(),
     resolve: {
-        extensions: ['.js'],
+        extensions: ['.ts', '.js'],
         alias: {
             '@': path.resolve(__dirname, 'src'),
         },
@@ -134,7 +139,7 @@ module.exports = {
                 ],
             },
             {
-                test: /\.js$/,
+                test: /\.(js|ts)$/,
                 exclude: /node_modules/,
                 use: jsLoaders()
 

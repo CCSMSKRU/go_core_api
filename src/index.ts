@@ -3,9 +3,6 @@ import {QueryOptions, QueryParams, QueryStack, QueryStorage} from "./models"
 import {getMsg as getMsg_} from "./lang"
 import {v4 as uuidv4} from 'uuid'
 
-let getMsg = function (msgAlias: string, lang?: string): string {
-    return getMsg_(msgAlias, lang || this?.lang)
-}
 
 
 const WS_NOT_CONNECTED = 'WS_NOT_CONNECTED'
@@ -55,6 +52,8 @@ const uncollapseData = function (obj) {
 }
 
 const getCookie = (name) => {
+    if (typeof document === 'undefined') return ''
+    if (!document || !document.cookie) return ''
     const val = document.cookie.split('; ').reduce((r, v) => {
         const parts = v.split('=')
         return parts[0] === name ? decodeURIComponent(parts[1]) : r
@@ -63,118 +62,6 @@ const getCookie = (name) => {
     return val
 }
 
-function tryDo(obj, cb) {
-
-    // Если уже определена ошибка (либо во время авторизации либо во время выполнения запроса), то
-    // Отклоняем все запросы. Позже эта ошибка будет сброшена
-    if (this.status === ERROR) {
-        if (this.debugFull) console.log('Server error. Finish', this.response)
-        return cb(null, this.auth_response)
-    }
-
-    if (this.status === AUTH_ERROR) {
-        if (this.debugFull) console.log('Error in auth process. Finish', this.auth_response)
-        return cb(null, this.auth_response)
-    }
-
-    // Запускаем авторизацию и вызываем запрос заново (он попадет в цикл ожидание пока авторизация не пройдет)
-    if (this.status === NO_AUTH) {
-        if (this.debugFull) console.log('Not authorized yet. Start process and call request again',
-            {obj, res: this.response})
-        this.auth()
-        if (!this.autoAuth) return cb(null, this.response)
-        return tryDo.call(this, obj, cb)
-    }
-
-    // Производится авторизация, немного ждем и вызываем заново. Таким образом рано или поздно статус изменется
-    if (this.status === IN_AUTH) {
-        if (this.debugFull) console.log('Still in auth process. Wait', {res: this.response})
-        setTimeout(() => {
-            if (!this.autoAuth) {
-                this.status = NO_AUTH
-                return cb(null, this.response)
-            }
-            tryDo.call(this, obj, cb)
-        }, 100)
-        return
-    }
-
-
-    if (this.status === READY) {
-        if (this.debugFull) console.log('Status READY. Run query.', obj)
-        let res
-        let counter = 0
-
-        const q = async () => {
-            try {
-                res = await this.query(obj)
-                this.response = res
-                if (res.code) {
-                    // Сессия стухла
-                    if (res.code === -4) {
-                        // if (!this.autoAuth) return cb(null, res)
-                        this.status = NO_AUTH
-                        return tryDo.call(this, obj, cb)
-                    }
-                    // Логическая ошибка
-                    return cb(null, res)
-                }
-
-                // Установим токен если это был запрос авторизации
-                if (!this.skipSetTokenOnLogin
-                    && obj.command === this.loginCommand
-                    && obj.object?.toLowerCase() === this.loginObject) {
-
-                    const tkn = res?.data
-                        ? res.data[this.loginTokenFieldName]
-                        : res[this.loginTokenFieldName]
-                    if (tkn) {
-                        this.token = tkn
-
-                        if (this.socket) this.socket.auth.token = this.token
-                        this.storage.set(this.tokenStorageKey, this.token)
-                    }
-                }
-
-                return cb(null, res)
-            } catch (e) {
-                // Произошла некая ошибка при запросе (например пропало соединение с сервером)
-                // Будем повторять несколько раз, прежде чем выдать ошибку
-                counter++
-                if (counter <= this.tryCount) {
-                    console.log(`Error while do query. Try:${counter} of ${this.tryCount}. Wait ${this.tryPause}`, e)
-                    res = await new Promise((resolve) => {
-                        setTimeout(async () => {
-                            resolve(await q())
-                        }, this.tryPause)
-                    })
-                    return res
-                } else {
-                    console.log(`Error while do query. Finish`, e)
-                    this.status = ERROR
-                    this.response = e
-                    setTimeout(() => {
-                        // Вернем в состояние готового (подключение могло восстановиться)
-                        this.status = READY
-                        this.response = null
-                    }, 3000)
-
-                    return cb(null, {
-                        code: 500,
-                        e,
-                        message: 'Server is not available'
-                    })
-
-                }
-            }
-        }
-
-        q()
-    } else {
-        return cb(new Error(`Unknown status: ${this.status}`))
-    }
-
-}
 
 const isWindow = (typeof window === 'object' && window)
 const globalObj = isWindow ? window : {}
@@ -183,50 +70,148 @@ const globalObj = isWindow ? window : {}
 let toastr = isWindow ? globalObj?.toastr : undefined
 // @ts-ignore
 let bootbox = isWindow ? globalObj?.bootbox : undefined
-
-// // @ts-ignore
-// let $ = window?.$
+// @ts-ignore
+let $ = isWindow ? globalObj?.jQuery || globalObj?.$ : undefined
 
 class Query {
+    private _getMsg = (msgAlias: string, lang?: string): string => {
+        return getMsg_(msgAlias, lang || this?.lang)
+    }
+
+    private _tryDo = (obj: any, cb: (err: any, res?: any) => void) => {
+
+        // Если уже определена ошибка (либо во время авторизации либо во время выполнения запроса), то
+        // Отклоняем все запросы. Позже эта ошибка будет сброшена
+        if (this.status === ERROR) {
+            if (this.debugFull) console.log('Server error. Finish', this.response)
+            return cb(null, this.auth_response)
+        }
+
+        if (this.status === AUTH_ERROR) {
+            if (this.debugFull) console.log('Error in auth process. Finish', this.auth_response)
+            return cb(null, this.auth_response)
+        }
+
+        // Запускаем авторизацию и вызываем запрос заново (он попадет в цикл ожидание пока авторизация не пройдет)
+        if (this.status === NO_AUTH) {
+            if (this.debugFull) console.log('Not authorized yet. Start process and call request again',
+                {obj, res: this.response})
+            this.auth()
+            if (!this.autoAuth) return cb(null, this.response)
+            return this._tryDo(obj, cb)
+        }
+
+        // Производится авторизация, немного ждем и вызываем заново. Таким образом рано или поздно статус изменется
+        if (this.status === IN_AUTH) {
+            if (this.debugFull) console.log('Still in auth process. Wait', {res: this.response})
+            setTimeout(() => {
+                if (!this.autoAuth) {
+                    this.status = NO_AUTH
+                    return cb(null, this.response)
+                }
+                this._tryDo(obj, cb)
+            }, 100)
+            return
+        }
+
+
+        if (this.status === READY) {
+            if (this.debugFull) console.log('Status READY. Run query.', obj)
+            let res
+            let counter = 0
+
+            const q = async () => {
+                try {
+                    res = await this.query(obj)
+                    this.response = res
+
+                    if (this.debugFull) console.log('Finished with result', res)
+
+                    // if (res.status === 'ERROR') {
+                    //     this.status = ERROR
+                    //     return cb(null, res)
+                    // }
+
+                    if (res?.auth_status === 'NO_AUTH') {
+                        this.status = NO_AUTH
+                        return this._tryDo(obj, cb)
+                    }
+
+                    if (res?.auth_status === 'AUTH_ERROR') {
+                        this.status = AUTH_ERROR
+                        this.auth_response = res
+                        return cb(null, res)
+                    }
+
+                    // console.log('Finish with res', res)
+
+                    cb(null, res)
+                } catch (e) {
+
+                    if (this.debugFull) console.log('CATCH error in tryDo', e)
+
+                    if (counter < 2) {
+                        counter++
+                        setTimeout(() => {
+                            q()
+                        }, 500)
+                        return
+                    }
+
+                    const res = {
+                        status: 'ERROR',
+                        msg: e.message || e,
+                        code: e.code || 500
+                    }
+                    this.response = res
+                    cb(null, res)
+                }
+            }
+
+            q()
+
+        }
+
+    }
     lang: string
     https: boolean
     host: string
     port: number
     url: string
-    useAJAX: unknown
+    useAJAX: any
     connectHost: string | null
-    extraHeaders: unknown
-    transports: unknown
+    extraHeaders: any
+    transports: any
     withCredentials: boolean
     device_type: string
-    device_info: unknown
+    device_info: any
     socketQuery_stack: QueryStack
     env: string
     autoAuth: boolean
-    authFunction: unknown
-    toMainFunction: unknown
-    afterInitConnect: unknown
+    authFunction: any
+    toMainFunction: any
+    afterInitConnect: any
     token: string
     login: string
     password: string
     storeGetFn: (key: string) => Promise<string|null>
-    storeSetFn: unknown
+    storeSetFn: any
     browserStorage: string
     tokenStorageKey: string
     uuidStorageKey: string
     uuidAgreeStorageKey: string
     storage: QueryStorage
     ws_status: string
-    auth_response: unknown | null
+    auth_response: any
     tryAuthCount: number
     tryAuthPause: number
     tryCount: number
     tryPause: number
-    debug: unknown
-    debugFull: unknown
-    doNotDeleteCollapseDataParam: unknown
+    debug: any
+    debugFull: any
+    doNotDeleteCollapseDataParam: any
     status: string
-
+    response: any
     socket: Socket
 
     tryConnectCnt: number
@@ -251,13 +236,16 @@ class Query {
     private inAuthStarted: number
 
     constructor(params?: QueryParams) {
+        this._resetState(params)
+    }
+
+    private _resetState(params?: QueryParams) {
         if (!params) params = {} as QueryParams
 
         // Save params (for reInit)
         this.params = params
 
         this.lang = params.lang || 'en'
-        getMsg = getMsg.bind(this)
 
         this.https = typeof params.https !== 'undefined' ? params.https : true
         this.host = (params.host || '').replace(/\/$/, '')
@@ -290,7 +278,7 @@ class Query {
         this.withCredentials = params.withCredentials
 
 
-        this.device_type = params.device_type || 'BROWSER'
+        this.device_type = params.device_type || 'WEB'
         this.device_info = params.device_info
 
         this.socketQuery_stack = {
@@ -390,7 +378,9 @@ class Query {
                 if (typeof this.storeSetFn === 'function') return await this.storeSetFn(key, val)
                 if (this.env === 'browser') {
                     if (this.browserStorage === 'cookie') {
-                        document.cookie = `${key}=${val}`
+                        if (typeof document !== 'undefined') {
+                            document.cookie = `${key}=${val}`
+                        }
                     } else if (this.browserStorage === 'localStorage') {
                         console.warn('Functionality in development (storage - set - localStorage)')
                     } else {
@@ -413,7 +403,8 @@ class Query {
         this.debugFull = params.debugFull
         this.doNotDeleteCollapseDataParam = params.doNotDeleteCollapseDataParam
 
-        this.status = this.token || !this.autoAuth ? READY : NO_AUTH
+        // this.status = this.token || !this.autoAuth ? READY : NO_AUTH
+        this.status = READY
 
         // Будем плавно увеличивать таймаут, если сразу не удается подключиться.
         // Сбросим после успешного подключения
@@ -423,8 +414,6 @@ class Query {
         this.init().then().catch(e => {
             console.error('ERROR:GoCoreQuery:init:', e)
         })
-
-
     }
 
     private async setUUID(): Promise<string | null> {
@@ -524,7 +513,7 @@ class Query {
         }
     }
 
-    async init() {
+    public init = async (): Promise<void> => {
         this.token = this.token || await this.storage.get(this.tokenStorageKey)
 
         if (this.debugFull) console.log('IN init(): INFO==>', {token: this.token})
@@ -536,19 +525,18 @@ class Query {
 
     async destroy() {
         if (this.socket) {
-            this.socket?.removeAllListeners()
-            this.socket?.disconnect()
-            this.socket?.close()
+            this.socket.removeAllListeners()
+            this.socket.disconnect()
+            this.socket.close()
         }
         this.socket = null
-        // await new Promise(cb=>setTimeout(cb, 5000))
+        this.ws_status = WS_NOT_CONNECTED
     }
 
     async reInit() {
         if (this.debug) console.log('REINIT')
         await this.destroy()
-        this.constructor(this.params)
-        // await this.init()
+        this._resetState(this.params)
         if (this.debug) console.log('REINITED!')
     }
 
@@ -559,53 +547,70 @@ class Query {
     }
 
     async queryAJAX(obj = {}) {
-        const httpS = this.https ? require('https') : require('http')
+        const url = `${this.https ? 'https' : 'http'}://${this.host}${this.port ? ':' + this.port : ''}${this.url}`
         const data = JSON.stringify(obj)
-
-        const options = {
-            hostname: this.host,
-            port: this.port,
-            path: this.url,
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Content-Length': data.length,
-                'Authorization': `Bearer ${this.token}`
-            }
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.token}`
         }
-        // if (this.cookie){
-        //     options.headers['Set-Cookie'] = this.cookie
-        // }
 
-        return await new Promise((resolve, reject) => {
-
-            const req = httpS.request(options, res => {
-
-                res.setEncoding('utf8')
-                let rawData = ''
-                res.on('data', (chunk) => {
-                    rawData += chunk
+        if (typeof fetch !== 'undefined') {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: data
                 })
-                res.on('end', () => {
-                    try {
-                        const parsedData = JSON.parse(rawData)
-                        resolve(parsedData)
-                    } catch (e) {
-                        console.error(e.message)
-                        reject(e)
-                    }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`)
+                }
+
+                return await response.json()
+            } catch (e) {
+                console.error('Fetch error:', e.message)
+                throw e
+            }
+        } else {
+            // Node.js < 18 fallback (or environment without fetch)
+            const httpS = this.https ? require('https') : require('http')
+            headers['Content-Length'] = data.length.toString()
+
+            const options = {
+                hostname: this.host,
+                port: this.port,
+                path: this.url,
+                method: 'POST',
+                headers: headers
+            }
+
+            return await new Promise((resolve, reject) => {
+                const req = httpS.request(options, res => {
+                    res.setEncoding('utf8')
+                    let rawData = ''
+                    res.on('data', (chunk) => {
+                        rawData += chunk
+                    })
+                    res.on('end', () => {
+                        try {
+                            const parsedData = JSON.parse(rawData)
+                            resolve(parsedData)
+                        } catch (e) {
+                            console.error(e.message)
+                            reject(e)
+                        }
+                    })
                 })
+
+                req.on('error', error => {
+                    console.error('Request error:', error)
+                    reject(error)
+                })
+
+                req.write(data)
+                req.end()
             })
-
-            req.on('error', error => {
-                console.error(error)
-                reject(error)
-            })
-
-            req.write(data)
-            req.end()
-        })
-
+        }
     }
 
     socketQuery(obj, cb) {
@@ -896,9 +901,9 @@ class Query {
                     }
 
                     item.request.params.confirmKey = resultData.confirmKey || resultData.key
-                    var cancelMsg = resultData.cancelMsg ?? getMsg('cancelMsg')
-                    var okBtnText = resultData.okBtnText ?? getMsg('okBtnText')
-                    var cancelBtnText = resultData.cancelBtnText ?? getMsg('cancelBtnText')
+                    var cancelMsg = resultData.cancelMsg ?? this._getMsg('cancelMsg')
+                    var okBtnText = resultData.okBtnText ?? this._getMsg('okBtnText')
+                    var cancelBtnText = resultData.cancelBtnText ?? this._getMsg('cancelBtnText')
 
                     switch (resultData.confirmType) {
 
@@ -930,23 +935,44 @@ class Query {
 
                                             if (resultData.responseType === 'text') {
 
-                                                item.request.params.confirm = $('#server-confirm-input').val()
+                                                const input_id = 'server-confirm-input'
+                                                let input_val = ''
+                                                if (typeof document !== 'undefined') {
+                                                    const input_el = typeof document !== 'undefined' ? document.getElementById(input_id) as HTMLInputElement : null
+                                                    if (input_el) input_val = input_el.value
+                                                }
+
+                                                item.request.params.confirm = $ ? $('#' + input_id).val() : input_val
 
                                             } else if (resultData.responseType === 'custom') {
 
                                                 const resObj = {}
-                                                bbd1
-                                                    .find(resultData.inputsClass ? '.' + resultData.inputsClass : '.server-confirm-input')
-                                                    .each(function (index) {
-                                                        switch ($(this).attr('type')) {
-                                                            case 'checkbox':
-                                                                resObj[$(this).attr('id')] = $(this).attr('checked') === 'checked'
-                                                                break
-                                                            default:
-                                                                resObj[$(this).attr('id')] = $(this).val('checked')
-                                                                break
+                                                if ($ && bbd1.find) {
+                                                    bbd1
+                                                        .find(resultData.inputsClass ? '.' + resultData.inputsClass : '.server-confirm-input')
+                                                        .each(function (index) {
+                                                            switch ($(this).attr('type')) {
+                                                                case 'checkbox':
+                                                                    resObj[$(this).attr('id')] = $(this).attr('checked') === 'checked'
+                                                                    break
+                                                                default:
+                                                                    resObj[$(this).attr('id')] = $(this).val()
+                                                                    break
+                                                            }
+                                                        })
+                                                } else {
+                                                    const selector = resultData.inputsClass ? '.' + resultData.inputsClass : '.server-confirm-input'
+                                                    const elements = typeof document !== 'undefined' ? document.querySelectorAll(selector) : []
+                                                    elements.forEach((el: any) => {
+                                                        const id = el.id || el.getAttribute('id')
+                                                        if (!id) return
+                                                        if (el.type === 'checkbox') {
+                                                            resObj[id] = el.checked
+                                                        } else {
+                                                            resObj[id] = el.value
                                                         }
                                                     })
+                                                }
                                                 item.request.params.confirm = resObj
                                             } else {
                                                 item.request.params.confirm = true
@@ -989,7 +1015,7 @@ class Query {
                                 break
                             }
 
-                            if (!document) {
+                            if (typeof document === 'undefined') {
                                 console.warn(`document not available`)
                                 break
                             }
@@ -999,10 +1025,10 @@ class Query {
                             toastr[result.toastr.type](result.toastr.message +
                                 '<div style="width: 100%;"><button id="confirm_socket_query_' + btnGuid +
                                 '" type="button" class="btn clear">' +
-                                getMsg('okBtnTextDefault') +
+                                this._getMsg('okBtnTextDefault') +
                                 '</button> <button id="cancel_socket_query_' +
                                 btnGuid + '" type="button" class="btn clear">' +
-                                getMsg('cancelBtnText') +
+                                this._getMsg('cancelBtnText') +
                                 '</button></div>', '', {
                                 "closeButton": false,
                                 "debug": false,
@@ -1022,23 +1048,27 @@ class Query {
                                 "tapToDismiss": false
                             })
 
-                            const confirmBtn = document.getElementById('confirm_socket_query_' + btnGuid)
+                        const confirmBtn = typeof document !== 'undefined' ? document.getElementById('confirm_socket_query_' + btnGuid) : null
+                        if (confirmBtn) {
                             confirmBtn.addEventListener('click', e => {
                                 item.request.params.confirm = true
                                 setTimeout(function () {
-                                    toastr.clear()
+                                    if (typeof toastr !== 'undefined') toastr.clear()
                                 }, 1000)
                                 this.do(item.request, item.callback)
                             })
+                        }
 
-                            const cancelBtn = document.getElementById('cancel_socket_query_' + btnGuid)
+                        const cancelBtn = typeof document !== 'undefined' ? document.getElementById('cancel_socket_query_' + btnGuid) : null
+                        if (cancelBtn) {
                             cancelBtn.addEventListener('click', e => {
-                                toastr['info'](cancelMsg)
+                                if (typeof toastr !== 'undefined') toastr['info'](cancelMsg)
                                 setTimeout(function () {
-                                    toastr.clear()
+                                    if (typeof toastr !== 'undefined') toastr.clear()
                                 }, 1000)
                                 item.callback(result)
                             })
+                        }
                             break
 
                     }
@@ -1049,23 +1079,25 @@ class Query {
                 }
 
                 if (resultData.system_download_now) {
-                    if (!document) {
+                    if (typeof document === 'undefined') {
                         console.warn(`document not available`)
                     } else {
                         const linkName = 'my_download_link' + Date.now() + '_' + Math.random()
 
                         const nameRu = resultData.name_ru || resultData.filename
 
-                        const body_ = document.getElementsByTagName('body')[0]
+                        const body_ = typeof document !== 'undefined' ? document.getElementsByTagName('body')[0] : null
 
-                        const a = document.createElement('a')
-                        a.setAttribute('id', linkName)
-                        a.setAttribute('href', resultData.path + resultData.filename)
-                        a.setAttribute('download', nameRu)
-                        a.setAttribute('style', "display:none;")
-                        body_.appendChild(a)
-                        a.click()
-                        a.remove()
+                        if (body_) {
+                            const a = document.createElement('a')
+                            a.setAttribute('id', linkName)
+                            a.setAttribute('href', resultData.path + resultData.filename)
+                            a.setAttribute('download', nameRu)
+                            a.setAttribute('style', "display:none;")
+                            body_.appendChild(a)
+                            a.click()
+                            a.remove()
+                        }
                     }
 
                 }
@@ -1157,10 +1189,25 @@ class Query {
 
     async auth() {
 
+        debugger;
         const now = Date.now()
-        if (this.status === IN_AUTH && now - this.inAuthStarted < 10000) {
+        const limit = 10000
+        const retryTimeout = 30000
+        if (!this.inAuthStarted) this.inAuthStarted = now
+
+        if (this.status === IN_AUTH && now - this.inAuthStarted < limit) {
             if (this.debugFull) console.log('Already in progress',
                 {diff: now - this.inAuthStarted, inAuthStarted: this.inAuthStarted})
+        } else if (this.status === IN_AUTH) {
+            if (this.debug) console.log(`GoCoreQuery: The authorization takes more than ${limit/1000}s. We will try again in ${retryTimeout/1000}s.`)
+            this.status = ERROR
+            setTimeout(async () => {
+                if (this.status === ERROR) {
+                    this.inAuthStarted = now
+                    await this.auth()
+                }
+            }, retryTimeout)
+            return
         }
 
         this.status = IN_AUTH
@@ -1245,9 +1292,9 @@ class Query {
 
     }
 
-    async do(obj, cb) {
+    public do = async (obj, cb) => {
         if (typeof cb === 'function') {
-            return tryDo.call(this, obj, (err, res) => {
+            return this._tryDo(obj, (err, res) => {
                 try {
                     cb(err || res)
                 } catch (e) {
@@ -1259,7 +1306,7 @@ class Query {
         return await new Promise((resolve, reject) => {
             // Здесь используем коллбек функцию, так как с помощью async/await делать рекурсивную асинхронную функцию
             // менее удобно. Соответственно await перед tryDo оускаем
-            tryDo.call(this, obj, (err, res) => {
+            this._tryDo(obj, (err, res) => {
                 if (err) return reject(err)
                 resolve(res)
             })
@@ -1274,5 +1321,7 @@ export default function init(params: QueryParams = {} as QueryParams): { api: un
 
 export const initGoCoreQuery = init
 
-// @ts-ignore
-globalObj?.initGoCoreQuery = init
+if (globalObj) {
+    // @ts-ignore
+    globalObj.initGoCoreQuery = init
+}

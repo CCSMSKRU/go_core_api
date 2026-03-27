@@ -1,10 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>For test</title>
+    <title>Интерактивное тестирование go_core_api</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; padding: 20px; max-width: 800px; margin: 0 auto; background: #f4f4f9; }
+        h1 { color: #333; }
+        .info { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        code { background: #eee; padding: 2px 5px; border-radius: 4px; }
+        .warning { color: #d9534f; font-weight: bold; }
+    </style>
 </head>
 <body>
+    <h1>Интерактивное тестирование go_core_api</h1>
+    <div class="info">
+        <p>Для проведения тестирования откройте <strong>Консоль Разработчика</strong> (F12 или Ctrl+Shift+I).</p>
+        <p><strong>Следуйте инструкциям в консоли браузера.</strong></p>
+        <hr>
+        <p>Основные команды:</p>
+        <ul>
+            <li><code>runTest({...})</code> - запуск теста с конфигурацией.</li>
+            <li><code>runNext()</code> - подтверждение выполнения шага (когда тест просит запустить или остановить сервер).</li>
+        </ul>
+        <p class="warning">Убедитесь, что библиотека была собрана командой <code>npm run build</code>.</p>
+    </div>
 
+    <!-- Подключаем собранную библиотеку -->
+    <script src="../dist/index.js"></script>
+    <!-- Подключаем скрипт теста -->
+    <script src="../tests/browser_test.js"></script>
 </body>
 </html>
