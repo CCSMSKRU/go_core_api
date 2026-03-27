@@ -18,6 +18,8 @@
             return;
         }
 
+        debugger;
+
         const { api, instance } = window.initGoCoreQuery(config);
 
         console.log('Конфигурация:', config);
