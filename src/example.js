@@ -13,10 +13,10 @@ const params = {
     //     alert('Вы согласны!')
     //     return true
     // },
-    // authFunction:()=>{
-    //     alert('authFunction')
-    // },
-    login:'ivantgco@gmail.com',
+    authFunction:()=>{
+        alert('authFunction')
+    },
+    login:'admin',
     password:'123',
     debug:true,
     debugFull:true,

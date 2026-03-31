@@ -803,12 +803,23 @@ class Query {
                         toastr['error'](t.additionalMessage, 'ATTENTION')
                     }
 
-                    // if (result.code === -4) {
-                    //     console.log('НЕ АВТОРИЗОВАН')
-                    //     item.callback(result)
-                    //     this.socketQuery_stack.removeItem(callback_id)
-                    //     return false
-                    // }
+                    if (result.code === -4) {
+                        if (this.debugFull) console.log('Response has code -4: Not authorized.')
+                        this.status = NO_AUTH
+
+                        if (this.autoAuth) {
+                            if (this.debugFull) console.log('autoAuth=true. Trying to auth and retry...')
+                            this.socketQuery_stack.removeItem(callback_id)
+                            return this.do(item.request, item.callback)
+                        } else {
+                            if (this.debugFull) console.log('autoAuth=false. Calling toAuth function...')
+                            this.auth()
+                        }
+
+                        item.callback(result)
+                        this.socketQuery_stack.removeItem(callback_id)
+                        return false
+                    }
                 }
             } else {
                 console.log(`%c THE ANSWER MUST BE AN OBJECT AND NOT null.
@@ -1189,7 +1200,6 @@ class Query {
 
     async auth() {
 
-        debugger;
         const now = Date.now()
         const limit = 10000
         const retryTimeout = 30000

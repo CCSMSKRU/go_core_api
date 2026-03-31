@@ -932,12 +932,25 @@ var Query = /** @class */ (function () {
                                     if (typeof toastr == "object" && t && t.additionalMessage && typeof toastr['error'] === 'function') {
                                         toastr['error'](t.additionalMessage, 'ATTENTION');
                                     }
-                                    // if (result.code === -4) {
-                                    //     console.log('НЕ АВТОРИЗОВАН')
-                                    //     item.callback(result)
-                                    //     this.socketQuery_stack.removeItem(callback_id)
-                                    //     return false
-                                    // }
+                                    if (result.code === -4) {
+                                        if (_this.debugFull)
+                                            console.log('Response has code -4: Not authorized.');
+                                        _this.status = NO_AUTH;
+                                        if (_this.autoAuth) {
+                                            if (_this.debugFull)
+                                                console.log('autoAuth=true. Trying to auth and retry...');
+                                            _this.socketQuery_stack.removeItem(callback_id);
+                                            return _this.do(item.request, item.callback);
+                                        }
+                                        else {
+                                            if (_this.debugFull)
+                                                console.log('autoAuth=false. Calling toAuth function...');
+                                            _this.auth();
+                                        }
+                                        item.callback(result);
+                                        _this.socketQuery_stack.removeItem(callback_id);
+                                        return false;
+                                    }
                                 }
                             }
                             else {
@@ -1305,7 +1318,6 @@ var Query = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        debugger;
                         now = Date.now();
                         limit = 10000;
                         retryTimeout = 30000;
