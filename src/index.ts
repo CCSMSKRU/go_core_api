@@ -1033,7 +1033,7 @@ class Query {
 
                             var btnGuid = Date.now() + '_' + Math.random()
 
-                            toastr[result.toastr.type](result.toastr.message +
+                            const toastrInstance = toastr[result.toastr.type](result.toastr.message +
                                 '<div style="width: 100%;"><button id="confirm_socket_query_' + btnGuid +
                                 '" type="button" class="btn clear">' +
                                 this._getMsg('okBtnTextDefault') +
@@ -1064,7 +1064,8 @@ class Query {
                             confirmBtn.addEventListener('click', e => {
                                 item.request.params.confirm = true
                                 setTimeout(function () {
-                                    if (typeof toastr !== 'undefined') toastr.clear()
+                                    if (typeof toastrInstance !== 'undefined') toastrInstance.remove();
+                                    else if (typeof toastr !== 'undefined') toastr.clear();
                                 }, 1000)
                                 this.do(item.request, item.callback)
                             })
@@ -1075,7 +1076,8 @@ class Query {
                             cancelBtn.addEventListener('click', e => {
                                 if (typeof toastr !== 'undefined') toastr['info'](cancelMsg)
                                 setTimeout(function () {
-                                    if (typeof toastr !== 'undefined') toastr.clear()
+                                    if (typeof toastrInstance !== 'undefined') toastrInstance.remove();
+                                    else if (typeof toastr !== 'undefined') toastr.clear();
                                 }, 1000)
                                 item.callback(result)
                             })
